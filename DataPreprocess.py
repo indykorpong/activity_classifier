@@ -1,10 +1,9 @@
 import numpy as np
-import statistics as stat
 import math
 
 def calculate_rval(a):
     a = int(a)
-    r_val = -1.5*g + (a/63)*3*g      # Calculate real value from raw data
+    r_val = -1.5*g + (a/63)*3*g      # Calculate real value from coded data
     r_val = float("{0:.8f}".format(r_val))
 
     return r_val
@@ -14,23 +13,17 @@ def calculate_si(data_arr):
     np_arr = np.array(data_arr)
     std_axis = np.std(np_arr,axis=0,ddof=1)
     
-    # print(std_axis)
     std_arr.append(std_axis)
     std = np.array(std_arr)
     si_square = np.sum(std**2,axis=1)
     si_square = si_square/3
-    # print(si_square)
    
     return si_square
 
 def calculate_si_m(data_arr):
     np_arr = np.array(data_arr)
-    # print(np_arr)
-    # print(" ")
     std_axis = np.std(np_arr,axis=0,ddof=1)
-    # print("Before: ", std_axis)
     std_axis = np.array(std_axis**2)
-    # print("After: ", std_axis)
 
     return std_axis
 
@@ -66,8 +59,6 @@ for f in filename:
     si_square = calculate_si(data_arr)
     # print(si_square)
     si_sq_arr.append(si_square[0])
-    # print("Si_square_val: ", si_sq_arr[-1])
-    # print(" ")
 
 # Find activity index value from Si_m when m is an acceleration axis number
 
@@ -83,10 +74,9 @@ for f in filename:
     print("=======================")
 
     g = 9.8  # Gravitational constant
-    window_size = 60
+    window_size = 40
 
     count = 0
-    num_lines = 0
     idx = 0
 
     data_arr = []
@@ -100,18 +90,12 @@ for f in filename:
 
             count = 0
             idx += 1
-            # if(file.name == "Accelerometer-2011-03-24-09-51-07-walk-f1.txt"):
-            #     print("Data array length: ",len(data_arr))
             si_m = calculate_si_m(data_arr)
             for i in range(3):
                 sum_std_sq += si_m[i]
                 # print("Si_m: ",si_m[i])
                 # print(" ")
             
-            # print("-----------------------")
-            # print("Sum: ", sum_std_sq)
-            # print("Si: ", si_sq_arr[file_count])
-            # print("-----------------------")
             current_si_sq = si_sq_arr[file_count]
             diff_std = (sum_std_sq - current_si_sq)/current_si_sq
         
@@ -120,8 +104,8 @@ for f in filename:
             # print("=======================")
 
             activity_idx = math.sqrt(max(diff_std/3,0))
-            print("Activity Index: ", activity_idx)
-            print("=======================")
+            # print("Activity Index: ", activity_idx)
+            # print("=======================")
         
             ai_arr.append(activity_idx)
 
@@ -134,9 +118,7 @@ for f in filename:
             temp.append(r_val)
         data_arr.append(temp)
         count += 1
-        num_lines += 1
 
-    # print(num_lines)
     file_count += 1
 
     np_ai_act = np.array(ai_arr)
