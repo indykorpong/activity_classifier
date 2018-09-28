@@ -1,13 +1,11 @@
-# Dementia_proj
-Activity Monitoring Analysis System for Dementia
+# Activity Monitoring Analysis System for Dementia
 
-
-Collaborators:
+## Collaborators:
 
 * Puttiphat Sriratpinyo
 
 * Korpong Sawataksornchuen
 
-Adviser:
+## Adviser:
 
-* Peerapon Veteekul
+* Peerapon Veteekul, Ph.D.
