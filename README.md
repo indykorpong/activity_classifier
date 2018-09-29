@@ -2,9 +2,9 @@
 
 ## Collaborators:
 
-* Puttiphat Sriratpinyo
-
 * Korpong Sawataksornchuen
+
+* Puttiphat Sriratpinyo
 
 ## Adviser:
 
