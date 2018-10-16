@@ -10,7 +10,7 @@ with open('data_activities.csv','r') as data_file:
 			all_lines.append(line)
 	
 all_lines = np.array(all_lines)
-print(all_lines)
+# print(all_lines)
 
 def calc_sec(time):
 	hms = time.split(':')
@@ -63,7 +63,7 @@ for elem in all_lines:
 		new_lines.append(elem)
 
 new_lines = np.array(new_lines)
-# print(new_lines)
+print(new_lines)
 
 with open('data_activities_eq_time.csv','w') as csv_file:
 	writer = csv.writer(csv_file,delimiter=',')
