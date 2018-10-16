@@ -4,7 +4,7 @@ import csv
 from os import listdir
 from os.path import isfile, join
 
-mypath = 'C:/Users/Indy/Desktop/Coding/Dementia_proj/SmartwatchData'
+mypath = '/Users/admin/Desktop/coding/Dementia_proj/SmartwatchData'
 all_files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 # print(all_files)
 
@@ -35,9 +35,11 @@ with open('labels.txt','w') as label_file:
 		label_file.write(item + " ")
 
 def sortfunc(elem):
-	return elem[0]
+	return elem[0]		# Sort by timestamp
 
 all_data_list.sort(key=sortfunc)
+
+# print(all_data_list)
 
 with open('data_activities.csv','w') as data_file:
 	writer = csv.writer(data_file)
