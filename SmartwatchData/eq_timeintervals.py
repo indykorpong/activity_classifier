@@ -35,18 +35,14 @@ prev_sec = calc_sec(prev_ts)
 kept_sec = prev_sec
 # print(prev_ts, prev_sec)
 exact_dur = 0.16
-accm_dur = 0.0			# accumulated duration
-accm_x = 0.0
-accm_y = 0.0
-accm_z = 0.0
 
 new_lines = []
-new_elem = []
 trimmed_mean_list = []
 trimmed_mean_elem = []
+
 for elem in all_lines:
 	timestamp = elem[0].split(' ')
-	if(len(timestamp)!=1):		# exclude header
+	if(len(timestamp)!=1):		# Exclude header
 		date = timestamp[0]
 		time = timestamp[1]
 		x = elem[1]
@@ -55,10 +51,6 @@ for elem in all_lines:
 		label = elem[4]
 
 		sec = calc_sec(time)
-
-		# sec_floor = math.floor(sec)
-		# sec_dec = sec - sec_floor
-		# print(sec_dec)
 
 		duration = sec - prev_sec
 		duration = round(duration,3)
@@ -66,62 +58,49 @@ for elem in all_lines:
 
 		if(duration!=exact_dur and duration!=0.0 and duration<2*exact_dur):
 			new_sec = prev_sec + exact_dur
-			
-			new_sec_dec = new_sec - math.floor(new_sec)
-			prev_sec_dec = prev_sec - math.floor(prev_sec)
-
-			trimmed_mean_elem.append(new_sec)
-			trimmed_mean_elem.append(x)
-			trimmed_mean_elem.append(y)
-			trimmed_mean_elem.append(z)
-			trimmed_mean_elem.append(label)
-			trimmed_mean_list.append(trimmed_mean_elem)
-
-			if(round(prev_sec_dec,0)==1.0 and round(new_sec_dec,0)==0.0):
-				# print(new_sec)
-				print(np.array(trimmed_mean_list))
-
-				trimmed_mean_elem.clear()
-				trimmed_mean_list.clear()
-
-			
-			# if(round(new_sec_dec,0)==1.0):
-			# 	print(new_sec)
-				
 		else:
 			new_sec = prev_sec + duration
 
-		# print(prev_sec, new_sec)
-		
+		diff_sec = math.floor(new_sec)-math.floor(prev_sec)
+		if(diff_sec>=1):									# If it's the first millisecond in timestamp
+			trimmed_mean_np = np.array(trimmed_mean_list)
+			# print(trimmed_mean_np)
+			x_item = sorted([float(item[1]) for item in trimmed_mean_np])
+			y_item = sorted([float(item[2]) for item in trimmed_mean_np])
+			z_item = sorted([float(item[3]) for item in trimmed_mean_np])
 
-		new_ts = calc_ts(new_sec)
-		# print(new_ts)
-		prev_sec = new_sec
+			x_item = np.array(x_item[1:-1])			# Drop the min,max data in the list
+			y_item = np.array(y_item[1:-1])
+			z_item = np.array(z_item[1:-1])
 
-		elem[0] = date + " " + new_ts
-		new_lines.append(elem)
+			# print(math.floor(prev_sec))
+
+			if(len(x_item)>0):
+				elem[1] = round(np.mean(x_item),8)		# Calculate mean value on each axis
+				elem[2] = round(np.mean(y_item),8)
+				elem[3] = round(np.mean(z_item),8)
+			else:
+				elem[1] = trimmed_mean_np[0,1]
+				elem[2] = trimmed_mean_np[0,2]
+				elem[3] = trimmed_mean_np[0,3]
+
+			prev_sec = math.floor(prev_sec)
+			new_ts = calc_ts(prev_sec)
+			# print(new_ts)
+
+			elem[0] = date + " " + new_ts
+			new_lines.append(elem)
+
+			trimmed_mean_list.clear()
+
+			prev_sec = new_sec
+			# print(prev_sec)
+
+		trimmed_mean_elem = [new_sec,x,y,z,label]
+		trimmed_mean_list.append(trimmed_mean_elem)
 
 new_lines = np.array(new_lines)
 # print(new_lines)
-
-'''
-accm_dur = 0.0			# accumulated duration
-accm_x = 0.0
-accm_y = 0.0
-accm_z = 0.0
-for elem in new_lines:
-	timestamp = elem[0].split(' ')
-	if(len(timestamp)!=1):
-		x = elem[1]
-		y = elem[2]
-		z = elem[3]
-		label = elem[4]
-
-		date = timestamp[0]
-		time = timestamp[1]
-
-		sec = calc_sec(time)
-'''
 
 with open('data_activities_eq_time.csv','w') as csv_file:
 	writer = csv.writer(csv_file,delimiter=',')
