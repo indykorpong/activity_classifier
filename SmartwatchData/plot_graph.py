@@ -20,7 +20,7 @@ with open('data_activities_eq_time.csv','r') as csv_file:
 			first_elem_0 = line.strip('\n').split(',')[0]
 			break
 
-	prev_dt = datetime.strptime(first_elem_0,'%Y-%m-%d %H:%M:%S.%f')
+	prev_dt = datetime.strptime(first_elem_0,'%Y-%m-%d %H:%M:%S')
 	
 	dt_periods = []
 	dt_periods.append(prev_dt)
@@ -31,7 +31,7 @@ with open('data_activities_eq_time.csv','r') as csv_file:
 		if(linecount>1):
 			elem = line.strip('\n').split(',')
 			# dt, time = elem[0].split(' ')
-			dt = datetime.strptime(elem[0],'%Y-%m-%d %H:%M:%S.%f')
+			dt = datetime.strptime(elem[0],'%Y-%m-%d %H:%M:%S')
 			diff_dt = dt - prev_dt
 			time_thres = 3600   # in seconds
 			if(diff_dt.seconds>time_thres):
@@ -56,15 +56,15 @@ npx = np.array(x)
 npy = np.array(y)
 npz = np.array(z)
 # print(npts)
-npts_1 = npts[11:110]			# 1 for walking downstairs
+npts_1 = npts[2:19]			# 1 for walking downstairs
 # print(npts_walking_down)
-npts_2 = npts[301:400]			# 2 for walking on the ground
-npx_1 = npx[11:110]
-npx_2 = npx[301:400]
-npy_1 = npy[11:110]
-npy_2 = npy[301:400]
-npz_1 = npz[11:110]
-npz_2 = npz[301:400]
+npts_2 = npts[47:64]			# 2 for walking on the ground
+npx_1 = npx[2:19]
+npx_2 = npx[47:64]
+npy_1 = npy[2:19]
+npy_2 = npy[47:64]
+npz_1 = npz[2:19]
+npz_2 = npz[47:64]
 
 mts = mdate.date2num(npts)
 mts_1 = mdate.date2num(npts_1)
