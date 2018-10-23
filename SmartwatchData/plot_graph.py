@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 from datetime import datetime
-from datetime import timedelta
 
 ts = []
 x = []
@@ -11,7 +10,7 @@ y = []
 z = []
 
 
-with open('data_activities_eq_time.csv','r') as csv_file:
+with open('prep_data/data_activities_eq_time.csv','r') as csv_file:
 	linecount = 0
 
 	for line in csv_file:
@@ -49,22 +48,23 @@ with open('data_activities_eq_time.csv','r') as csv_file:
 	dt_periods.append(dt)
 
 
-# print("hehe", np.array(dt_periods), "haha")
+print(np.array(dt_periods))
+
 
 npts = np.array(ts)
 npx = np.array(x)
 npy = np.array(y)
 npz = np.array(z)
 # print(npts)
-npts_1 = npts[2:19]			# 1 for walking downstairs
+npts_1 = npts[2:20]			# 1 for walking downstairs
 # print(npts_walking_down)
-npts_2 = npts[47:64]			# 2 for walking on the ground
-npx_1 = npx[2:19]
-npx_2 = npx[47:64]
-npy_1 = npy[2:19]
-npy_2 = npy[47:64]
-npz_1 = npz[2:19]
-npz_2 = npz[47:64]
+npts_2 = npts[33:51]			# 2 for walking on the ground
+npx_1 = npx[2:20]
+npx_2 = npx[33:51]
+npy_1 = npy[2:20]
+npy_2 = npy[33:51]
+npz_1 = npz[2:20]
+npz_2 = npz[33:51]
 
 mts = mdate.date2num(npts)
 mts_1 = mdate.date2num(npts_1)
@@ -75,14 +75,14 @@ plt.plot_date(mts_1,npx_1,'r',label='X')
 plt.plot_date(mts_1,npy_1,'g',label='Y')
 plt.plot_date(mts_1,npz_1,'b',label='Z')
 plt.legend()
-plt.title('Walking Downstairs')
+plt.title('Walking')
 
 plt.subplot(212)
 plt.plot_date(mts_2,npx_2,'r',label='X')
 plt.plot_date(mts_2,npy_2,'g',label='Y')
 plt.plot_date(mts_2,npz_2,'b',label='Z')
 plt.legend()
-plt.title('Walking on the ground')
+plt.title('Running')
 
 plt.gca().xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M:%S"))
 
