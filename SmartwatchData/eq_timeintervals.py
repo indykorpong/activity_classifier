@@ -101,7 +101,7 @@ for elem in all_lines:
 new_lines = np.array(new_lines)
 print(new_lines)
 
-with open('prep_data/data_activities_eq_time.csv','w') as csv_file:
+with open('prep_data/data_activities_eq_all.csv','w') as csv_file:
 	writer = csv.writer(csv_file,delimiter=',')
 	headers = ['timestamp','x','y','z','label']
 	writer.writerow(headers)
