@@ -1,1 +1,1 @@
-walking walking_upstairs running walking_downstairs 
+walking_downstairs walking_upstairs walking running 
