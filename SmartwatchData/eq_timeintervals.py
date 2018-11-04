@@ -3,7 +3,7 @@ import csv
 import math
 
 all_lines = []
-with open('data_activities.csv','r') as data_file:
+with open('prep_data/data_activities.csv','r') as data_file:
 	for line in data_file:
 		line = line.strip('\n')
 		line = line.split(',')
@@ -41,10 +41,9 @@ trimmed_mean_list = []
 trimmed_mean_elem = []
 
 for elem in all_lines:
-	timestamp = elem[0].split(' ')
-	if(len(timestamp)!=1):		# Exclude header
-		date = timestamp[0]
-		time = timestamp[1]
+	date = elem[0]
+	time = elem[1]
+	if(date!='date'):		# Exclude header
 		x = elem[1]
 		y = elem[2]
 		z = elem[3]
@@ -100,9 +99,9 @@ for elem in all_lines:
 		trimmed_mean_list.append(trimmed_mean_elem)
 
 new_lines = np.array(new_lines)
-# print(new_lines)
+print(new_lines)
 
-with open('data_activities_eq_time.csv','w') as csv_file:
+with open('prep_data/data_activities_eq_all.csv','w') as csv_file:
 	writer = csv.writer(csv_file,delimiter=',')
 	headers = ['timestamp','x','y','z','label']
 	writer.writerow(headers)
