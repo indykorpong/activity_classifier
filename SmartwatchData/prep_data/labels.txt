@@ -1,1 +1,1 @@
-walking_downstairs walking_upstairs walking running 
+sitting laying standing walking_up walking_down running walking 
