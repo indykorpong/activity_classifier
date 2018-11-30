@@ -1,1 +1,1 @@
-sitting laying standing walking_up walking_down running walking 
+sitting standing walking_down walking running walking_up laying 
