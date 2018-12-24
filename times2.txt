@@ -1,0 +1,11 @@
+191	stand
+190	sit
+197	stand
+190	lay down
+185	sit
+190	lay down
+193	stand
+67	NaN
+193	walk
+194	walk
+27	NaN
