@@ -1,0 +1,10 @@
+29.20	stand
+30.80	sit
+31.03	stand
+32.94	lay down
+30.96	sit
+31.05	lay down
+31.03	stand
+11.63	NaN
+45.75	walk
+11.469	NaN
