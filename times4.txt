@@ -1,4 +1,4 @@
-29.20	stand
+30.80	stand
 30.80	sit
 31.03	stand
 32.94	lay down

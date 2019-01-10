@@ -1,4 +1,4 @@
-29.58	stand
+31.18	stand
 31.71	sit
 31.71	stand
 10.95	NaN
