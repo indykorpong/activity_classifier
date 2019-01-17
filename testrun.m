@@ -1,1 +1,0 @@
-filename = 'SmartwatchData/raw_data/log_acc_ped.csv'
