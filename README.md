@@ -8,4 +8,4 @@
 
 ## Adviser:
 
-* Peerapon Veteekul, Ph.D.
+* Peerapon Vateekul, Ph.D.
