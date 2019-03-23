@@ -5,17 +5,8 @@ create table Patient(
 	Y float(6,4), 
 	Z float(6,4), 
 	HR float(6,4),
+    Label varchar(255),
     primary key(ID, Dateandtime)
-    );
-                    
-create table Predicted(
-	ID int not null,
-	Dateandtime datetime not null,
-	X float(6,4),
-	Y float(6,4), 
-	Z float(6,4), 
-	Label varchar(255),
-    foreign key(ID, Dateandtime) references Patient(ID, Dateandtime)
     );
                     
 create table AllDaySummary(
