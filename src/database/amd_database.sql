@@ -1,3 +1,5 @@
+create database if not exists amd_project;
+
 create table Patient(
 	ID int not null, 
 	DateAndTime datetime not null,
@@ -13,8 +15,9 @@ create table Patient(
  
 create table AllDaySummary(
 	ID int not null,
-    DateTimeFrom datetime not null,
-    DateTimeUntil datetime not null,
+    Date date not null,
+    TimeFrom time not null,
+    TimeUntil time not null,
     DurationSit time,
     DurationSleep time,
     DurationStand time,
@@ -27,6 +30,10 @@ create table ActivityAnalysis(
     DateTimeFrom datetime not null,
     DateTimeUntil datetime not null,
     Milliseconds int not null,
+    CountSit int,
+    CountSleep int,
+    CountStand int,
+    CountWalk int,
     CountActive int,
     CountInactive int,
 	CountTransition int,
