@@ -1,4 +1,5 @@
 create database if not exists amd_project;
+use amd_project;
 
 create table Patient(
 	ID int not null, 
@@ -22,9 +23,19 @@ create table AllDaySummary(
     DurationSleep time,
     DurationStand time,
     DurationWalk time,
+    CountSit int,
+    CountSleep int,
+    CountStand int,
+    CountWalk int,
+    CountActive int,
+    CountInactive int,
+    CountTotalActiveness int,
+	CountTransition int,
+    DurationPerTransition time,
     foreign key(ID) references Patient(ID)
     );
     
+/*    
 create table ActivityAnalysis(
 	ID int not null,
     DateTimeFrom datetime not null,
@@ -41,3 +52,4 @@ create table ActivityAnalysis(
     DurationPerTransition time,
     foreign key(ID) references Patient(ID)
 );
+*/
