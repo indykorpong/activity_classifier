@@ -3,14 +3,13 @@ use amd_project;
 
 create table Patient(
 	ID int not null, 
-	DateAndTime datetime not null,
-    Milliseconds varchar(255) not null,
+	DateAndTime datetime(3) not null,
 	X float(6,4), 
 	Y float(6,4), 
 	Z float(6,4), 
 	HR float(7,4),
-    Label varchar(255),
-    primary key(ID, Dateandtime, Milliseconds)
+    Label int,
+    primary key(ID, Dateandtime)
     );
  
 create table AllDaySummary(
@@ -39,6 +38,6 @@ create table ActivityPeriod(
     Date date not null,
     TimeFrom time not null,
     TimeUntil time not null,
-    Label varchar(255),
+    Label int,
     foreign key(ID) references Patient(ID)
 );
