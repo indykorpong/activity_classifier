@@ -12,7 +12,6 @@ create table Patient(
     Label varchar(255),
     primary key(ID, Dateandtime, Milliseconds)
     );
-
  
 create table AllDaySummary(
 	ID int not null,
@@ -34,22 +33,12 @@ create table AllDaySummary(
     DurationPerTransition time,
     foreign key(ID) references Patient(ID)
     );
-    
-/*    
-create table ActivityAnalysis(
+       
+create table ActivityPeriod(
 	ID int not null,
-    DateTimeFrom datetime not null,
-    DateTimeUntil datetime not null,
-    Milliseconds int not null,
-    CountSit int,
-    CountSleep int,
-    CountStand int,
-    CountWalk int,
-    CountActive int,
-    CountInactive int,
-	CountTransition int,
-    CountTotalActiveness int,
-    DurationPerTransition time,
+    Date date not null,
+    TimeFrom time not null,
+    TimeUntil time not null,
+    Label varchar(255),
     foreign key(ID) references Patient(ID)
 );
-*/
