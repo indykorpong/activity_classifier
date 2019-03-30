@@ -17,6 +17,8 @@ create table AllDaySummary(
     Date date not null,
     TimeFrom time not null,
     TimeUntil time not null,
+    ActualFrom time not null,
+    ActualUntil time not null,
     DurationSit time,
     DurationSleep time,
     DurationStand time,
