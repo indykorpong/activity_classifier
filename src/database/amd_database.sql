@@ -23,6 +23,7 @@ create table AllDaySummary(
     DurationSleep time,
     DurationStand time,
     DurationWalk time,
+    TotalDuration time,
     CountSit int,
     CountSleep int,
     CountStand int,
