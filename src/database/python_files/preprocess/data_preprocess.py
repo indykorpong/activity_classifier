@@ -16,7 +16,7 @@ from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
 
-from ..load_dataset import load_acc, load_hr, load_timer, merge_acc_and_hr
+from load_data.load_dataset import load_acc, load_hr, load_timer, merge_acc_and_hr
 
 # # Load Raw Data
 

@@ -12,11 +12,13 @@ import matplotlib.pyplot as plt
 import os
 import math
 
+from datetime import timedelta
+from time import strftime, strptime
 from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
 
-from ..load_data.load_dataset import load_acc, load_hr, load_timer, merge_acc_and_hr, calc_sec, calc_ts
+from load_data.load_dataset import load_acc, load_hr, load_timer, merge_acc_and_hr, calc_sec, calc_ts
 
 # # Load Raw Data
 
@@ -85,10 +87,14 @@ def copy_one_day(df_all_p):
 
     df_day['ID'] = pd.Series(['9999' for i in range(df_day.shape[0])])
 
+    date_format = '%y-%m-%d'
+
     date = '2019-03-28'
+    date_t = strptime(date, date_format)
     midnight = '00:00:00.000'
 
-    time_list = np.array([date + ' ' + calc_ts(calc_sec(midnight)+(T*i)) for i in range(int(oneday*freq))])
+    time_list = np.array([strftime(date_format, date_t + timedelta(seconds=calc_sec(midnight)+(T*i))) + ' ' + 
+                calc_ts(calc_sec(midnight)+(T*i)) for i in range(int(30*oneday*freq))])
 
     df_day['timestamp'] = pd.Series(time_list)
 
