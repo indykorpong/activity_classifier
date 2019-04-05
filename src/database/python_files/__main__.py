@@ -16,11 +16,11 @@ import mysql.connector
 from os import listdir, walk
 from os.path import isfile, join
 
-from ..data_preprocess import load_all_data, export_cleaned_data
-from ..predict import predict_label, export_predicted_data
-from ..summarize import get_summarized_data, export_summarized_data
+from preprocess.data_preprocess import load_all_data, export_cleaned_data
+from predict.predict import predict_label, export_predicted_data
+from summarize.summarize import get_summarized_data, export_summarized_data
 
-from ..copy_data import load_raw_data, copy_one_day, export_copied_data
+from preprocess.copy_data import load_raw_data, copy_one_day, export_copied_data
 
 # # Set data path
 
@@ -171,4 +171,5 @@ def main_function():
 
 # print(df_summary_all)
 
-main_function()
+if(__name__=='__main__'):
+    main_function()
