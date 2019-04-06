@@ -83,8 +83,8 @@ def calc_t_period(dates,secs):
 
 
 # Retrieve file directories from Google Drive
-mypath = '../DDC_Data/raw/'
-basepath = '../'
+mypath = 'DDC_Data/raw/'
+basepath = ''
 
 dir_ = [f for f in walk(mypath)]
 # print(dir_)

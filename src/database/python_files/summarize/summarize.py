@@ -11,13 +11,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import math
+import sys
+
+path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+sys.path.append(path_to_module)
 
 from os import listdir, walk
 from os.path import isfile, join
 
-from ..activity_summary import get_df_summary_all, get_floor_start, get_ceil_finish
-from ..load_dataset import calc_sec, calc_ts
-from ..preprocessing import convert_time_to_string
+from summarize.activity_summary import get_df_summary_all, get_floor_start, get_ceil_finish
+from load_data.load_dataset import calc_sec, calc_ts
+from predict.preprocessing import convert_time_to_string
 
 def get_duration_per_act(i, df_summary_all):
         from_actual = df_summary_all.loc[i, 'from actual']

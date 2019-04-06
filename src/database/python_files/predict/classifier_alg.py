@@ -10,12 +10,15 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+import sys
 
+path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+sys.path.append(path_to_module)
 
 # In[1]:
 
 from tqdm import tqdm
-from detect_peaks import detect_peaks
+from predict.detect_peaks import detect_peaks
 
 
 # # Classification Algorithms

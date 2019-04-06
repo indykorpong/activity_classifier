@@ -11,9 +11,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import math
+import time
+import datetime
+import sys
 
-from datetime import timedelta
-from time import strftime, strptime
+path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+sys.path.append(path_to_module)
+
+from datetime import timedelta, date
 from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
@@ -21,6 +26,9 @@ from sklearn.preprocessing import MinMaxScaler
 from load_data.load_dataset import load_acc, load_hr, load_timer, merge_acc_and_hr, calc_sec, calc_ts
 
 # # Load Raw Data
+
+datapath = 'DDC_Data/'
+basepath = ''
 
 # In[3]:
 
@@ -33,8 +41,8 @@ all_patients = [str(i) for i in subj_range]
 # In[4]:
 def load_raw_data():
 
-    mypath = '../DDC_Data/raw/'
-    basepath = '../'
+    mypath = 'DDC_Data/raw/'
+    basepath = ''
 
     df_all_p = pd.DataFrame()
 
@@ -70,9 +78,37 @@ def load_raw_data():
 
 # # Copy Data
 
+def copy_one_day(df_all_p):
+    df_day = pd.DataFrame()
+
+    T = 0.16
+    freq = 1/T
+    oneday = 24*60*60
+
+    while(df_day.shape[0]<=int(oneday*freq)):
+        df_day = df_day.append(df_all_p, sort=False)
+
+    df_day = df_day[:int(oneday*freq)]
+    df_day = df_day.reset_index(drop=True)
+
+    df_day['ID'] = pd.Series(['9999' for i in range(df_day.shape[0])])
+
+    date_format = '%Y-%m-%d'
+
+    dt = '2019-03-28'
+    date_t = datetime.datetime.fromtimestamp(time.mktime(time.strptime(dt, date_format)))
+    midnight = '00:00:00.000'
+
+    time_list = np.array([(date_t + timedelta(seconds=calc_sec(midnight)+(T*i))).strftime(date_format) + ' ' + 
+                calc_ts(calc_sec(midnight)+(T*i)) for i in range(int(oneday*freq))])
+
+    df_day['timestamp'] = pd.Series(time_list)
+
+    return df_day
+
 # In[45]:
 
-def copy_one_day(df_all_p):
+def copy_one_month(df_all_p):
     df_day = pd.DataFrame()
 
     T = 0.16
@@ -87,16 +123,17 @@ def copy_one_day(df_all_p):
 
     df_day['ID'] = pd.Series(['9999' for i in range(df_day.shape[0])])
 
-    date_format = '%y-%m-%d'
+    date_format = '%Y-%m-%d'
 
-    date = '2019-03-28'
-    date_t = strptime(date, date_format)
+    dt = '2019-03-28'
+    date_t = datetime.datetime.fromtimestamp(time.mktime(time.strptime(dt, date_format)))
     midnight = '00:00:00.000'
 
-    time_list = np.array([strftime(date_format, date_t + timedelta(seconds=calc_sec(midnight)+(T*i))) + ' ' + 
+    time_list = np.array([(date_t + timedelta(seconds=calc_sec(midnight)+(T*i))).strftime(date_format) + ' ' + 
                 calc_ts(calc_sec(midnight)+(T*i)) for i in range(int(30*oneday*freq))])
 
     df_day['timestamp'] = pd.Series(time_list)
+    print(time_list.shape)
 
     return df_day
 
@@ -106,3 +143,14 @@ def copy_one_day(df_all_p):
 def export_copied_data(df_day, cleaned_data_path):
 
     df_day.to_csv(cleaned_data_path)
+
+
+cleaned_data_path_day = datapath + 'cleaned/cleaned_data_9999_day.csv'
+cleaned_data_path_month = datapath + 'cleaned/cleaned_data_9999_month.csv'
+
+df_all_p = load_raw_data()
+df_day = copy_one_day(df_all_p)
+export_copied_data(df_day, cleaned_data_path_day)
+
+df_month = copy_one_month(df_all_p)
+export_copied_data(df_month, cleaned_data_path_month)

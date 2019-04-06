@@ -9,9 +9,13 @@ import pickle
 import ruptures as rpt
 import numpy as np
 import pandas as pd
+import sys
 
-from ..load_dataset import calc_sec, calc_ts
-from ..preprocessing import convert_time_to_string
+path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+sys.path.append(path_to_module)
+
+from load_data.load_dataset import calc_sec, calc_ts
+from predict.preprocessing import convert_time_to_string
 
 # # Analyze Predicted Results
 
