@@ -12,6 +12,10 @@ import pickle
 import os
 import math
 import mysql.connector
+import sys
+
+path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+sys.path.append(path_to_module)
 
 from os import listdir, walk
 from os.path import isfile, join
@@ -24,8 +28,8 @@ from preprocess.copy_data import load_raw_data, copy_one_day, export_copied_data
 
 # # Set data path
 
-datapath = '../DDC_Data/'
-basepath = '../'
+datapath = 'DDC_Data/'
+basepath = ''
 
 # # Connect to MySQL Database
 
@@ -82,7 +86,7 @@ def get_all_patients_result():
 
 
 def get_all_day_result():
-    cleaned_data_path = datapath + 'cleaned/cleaned_data_9999.csv'
+    cleaned_data_path = datapath + 'cleaned/cleaned_data_9999_day.csv'
     predicted_data_path = datapath + 'prediction/predicted_data_9999.csv'
     all_day_summary_path = datapath + 'summary/all_day_summary_9999.csv'
     act_period_path = datapath + 'summary/activity_period_9999.csv'
@@ -91,12 +95,10 @@ def get_all_day_result():
     df_day = copy_one_day(df_all_p)
     export_copied_data(df_day, cleaned_data_path)
 
-    df_all_p_sorted = predict_label(predicted_data_path)
+    df_all_p_sorted = predict_label(cleaned_data_path)
     export_predicted_data(df_all_p_sorted, predicted_data_path)
 
-
     # # Analyze Predicted Results
-
 
     df_summary_all, df_act_period = get_summarized_data(predicted_data_path)
     export_summarized_data(df_summary_all, df_act_period, all_day_summary_path, act_period_path)
@@ -165,9 +167,9 @@ def insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_p
     mydb.commit()
 
 def main_function():
-    mydb, mycursor = connect_to_database()
-    df_all_p_sorted, df_summary_all, df_act_period = get_all_patients_result()
-    insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_period)
+    # mydb, mycursor = connect_to_database()
+    df_all_p_sorted, df_summary_all, df_act_period = get_all_day_result()
+    # insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_period)
 
 # print(df_summary_all)
 

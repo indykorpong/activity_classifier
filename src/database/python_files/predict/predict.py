@@ -12,12 +12,16 @@ import matplotlib.pyplot as plt
 import os
 import math
 import pickle
+import sys
+
+path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+sys.path.append(path_to_module)
 
 from os import listdir, walk
 from os.path import isfile, join
 
-from ..preprocessing import prepare_impure_label
-from ..classifier_alg import combine_2
+from predict.preprocessing import prepare_impure_label
+from predict.classifier_alg import combine_2
 # In[1]:
 
 
@@ -27,8 +31,8 @@ from tqdm import tqdm
 # # Load Cleaned Data
 
 
-datapath = '../DDC_Data/'
-basepath = '../'
+datapath = 'DDC_Data/'
+basepath = ''
 
 
 def predict_label(cleaned_data_path):

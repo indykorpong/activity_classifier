@@ -11,6 +11,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import math
+import sys
+
+path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+sys.path.append(path_to_module)
 
 from os import listdir, walk
 from os.path import isfile, join
@@ -20,9 +24,9 @@ from load_data.load_dataset import load_acc, load_hr, load_timer, merge_acc_and_
 
 # # Load Raw Data
 
-mypath = '../DDC_Data/raw/'
-basepath = '../'
-datapath = '../DDC_Data/'
+mypath = 'DDC_Data/raw/'
+datapath = 'DDC_Data/'
+basepath = ''
 
 # In[3]:
 
