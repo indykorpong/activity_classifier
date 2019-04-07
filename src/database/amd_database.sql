@@ -1,40 +1,46 @@
+create database if not exists amd_project;
+use amd_project;
+
 create table Patient(
 	ID int not null, 
-	Dateandtime datetime not null,
+	DateAndTime datetime(3) not null,
 	X float(6,4), 
 	Y float(6,4), 
 	Z float(6,4), 
-	HR float(6,4),
+	HR float(7,4),
+    Label int,
     primary key(ID, Dateandtime)
     );
-                    
-create table Predicted(
-	ID int not null,
-	Dateandtime datetime not null,
-	X float(6,4),
-	Y float(6,4), 
-	Z float(6,4), 
-	Label varchar(255),
-    foreign key(ID, Dateandtime) references Patient(ID, Dateandtime)
-    );
-                    
+ 
 create table AllDaySummary(
 	ID int not null,
-    Dateandtime datetime not null,
+    Date date not null,
+    TimeFrom time not null,
+    TimeUntil time not null,
+    ActualFrom time not null,
+    ActualUntil time not null,
     DurationSit time,
     DurationSleep time,
     DurationStand time,
     DurationWalk time,
-    foreign key(ID, Dateandtime) references Patient(ID, Dateandtime)
-    );
-    
-create table ActivityAnalysis(
-	ID int not null,
-    Dateandtime datetime not null,
+    TotalDuration time,
+    CountSit int,
+    CountSleep int,
+    CountStand int,
+    CountWalk int,
     CountActive int,
     CountInactive int,
-	CountTransition int,
     CountTotalActiveness int,
+	CountTransition int,
     DurationPerTransition time,
-    foreign key(ID, Dateandtime) references Patient(ID, Dateandtime)
+    foreign key(ID) references Patient(ID)
+    );
+       
+create table ActivityPeriod(
+	ID int not null,
+    Date date not null,
+    TimeFrom time not null,
+    TimeUntil time not null,
+    Label int,
+    foreign key(ID) references Patient(ID)
 );
