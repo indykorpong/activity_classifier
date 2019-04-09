@@ -1,13 +1,14 @@
-create database if not exists test_indy;
-use test_indy;
+-- create database if not exists cu_amd;
+use cu_amd;
 
 create table Patient(
 	ID int not null, 
 	DateAndTime datetime(3) not null,
-	X float(6,4), 
-	Y float(6,4), 
-	Z float(6,4), 
-	HR float(7,4),
+	X decimal(6,4), 
+	Y decimal(6,4), 
+	Z decimal(6,4), 
+	HR decimal(7,4),
+    ActivityIndex decimal(9,8),
     Label int,
     primary key(ID, Dateandtime)
     );

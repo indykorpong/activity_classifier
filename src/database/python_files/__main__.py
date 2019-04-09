@@ -14,7 +14,9 @@ import math
 import mysql.connector
 import sys
 
-path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+path_to_module = '/var/www/html/python/mysql_connect/python_files'
+
 sys.path.append(path_to_module)
 
 from os import listdir, walk
@@ -24,12 +26,15 @@ from preprocess.data_preprocess import load_all_data, export_cleaned_data
 from predict.predict import predict_label, export_predicted_data
 from summarize.summarize import get_summarized_data, export_summarized_data
 
-from preprocess.copy_data import load_raw_data, copy_one_day, export_copied_data
+from preprocess.copy_data import load_raw_data, load_raw_data_2, copy_one_day, copy_one_month, export_copied_data
 
 # # Set data path
 
-datapath = 'DDC_Data/'
-basepath = ''
+# datapath = 'DDC_Data/'
+# basepath = ''
+
+basepath = '/var/www/html/python/mysql_connect/'
+datapath = basepath + 'DDC_Data/'
 
 # # Connect to MySQL Database
 
@@ -38,7 +43,7 @@ def connect_to_database():
         host='localhost',
         user='php',
         passwd='HOD8912+php',
-        database='test_indy'
+        database='cu_amd'
         )
 
     print(mydb)
@@ -85,23 +90,29 @@ def get_all_patients_result():
 
 
 
-def get_all_day_result():
-    cleaned_data_path = datapath + 'cleaned/cleaned_data_9999_day.csv'
-    predicted_data_path = datapath + 'prediction/predicted_data_9999.csv'
-    all_day_summary_path = datapath + 'summary/all_day_summary_9999.csv'
-    act_period_path = datapath + 'summary/activity_period_9999.csv'
+def get_all_day_result(mydb, mycursor):
+    # cleaned_data_path = datapath + 'cleaned/cleaned_data_9999_day.csv'
+    # predicted_data_path = datapath + 'prediction/predicted_data_9999.csv'
+    # all_day_summary_path = datapath + 'summary/all_day_summary_9999.csv'
+    # act_period_path = datapath + 'summary/activity_period_9999.csv'
 
-    df_all_p = load_raw_data()
-    df_day = copy_one_day(df_all_p)
-    export_copied_data(df_day, cleaned_data_path)
+    df_all_p = load_raw_data_2()
+    df_large = copy_one_month(df_all_p)
 
-    df_all_p_sorted = predict_label(cleaned_data_path)
-    export_predicted_data(df_all_p_sorted, predicted_data_path)
+    # export_copied_data(df_day, cleaned_data_path)
+
+    df_all_p_sorted = predict_label(df_large)
+    insert_db_patient(df_all_p_sorted, mydb, mycursor)
+
+    # export_predicted_data(df_all_p_sorted, predicted_data_path)
 
     # # Analyze Predicted Results
 
-    df_summary_all, df_act_period = get_summarized_data(predicted_data_path)
-    export_summarized_data(df_summary_all, df_act_period, all_day_summary_path, act_period_path)
+    df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted)
+    insert_db_all_day_summary(df_summary_all, mydb, mycursor)
+    insert_db_act_period(df_act_period, mydb, mycursor)
+
+    # export_summarized_data(df_summary_all, df_act_period, all_day_summary_path, act_period_path)
 
     return df_all_p_sorted, df_summary_all, df_act_period
 
@@ -110,8 +121,7 @@ def get_all_day_result():
 
 # In[37]:
 
-def insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_period):
-
+def insert_db_patient(df_all_p_sorted, mydb, mycursor):
     sql = "INSERT INTO Patient (ID, Dateandtime, X, Y, Z, HR, Label) VALUES (%s, %s, %s, %s, %s, %s, %s)"
 
     for row in zip(df_all_p_sorted['ID'],
@@ -126,7 +136,9 @@ def insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_p
 
     mydb.commit()
 
-    sql = "INSERT INTO AllDaySummary (ID, Date, TimeFrom, TimeUntil, ActualFrom, ActualUntil,    DurationSit, DurationSleep, DurationStand, DurationWalk, TotalDuration,    CountSit, CountSleep, CountStand, CountWalk,    CountActive, CountInactive,    CountTotalActiveness, CountTransition, DurationPerTransition)    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+
+def insert_db_all_day_summary(df_summary_all, mydb, mycursor):
+    sql = "INSERT INTO All_day_summary (ID, Date, TimeFrom, TimeUntil, ActualFrom, ActualUntil,    DurationSit, DurationSleep, DurationStand, DurationWalk, TotalDuration,    CountSit, CountSleep, CountStand, CountWalk,    CountActive, CountInactive,    CountTotalActiveness, CountTransition, DurationPerTransition)    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
     for row in zip(df_summary_all['ID'],
                 df_summary_all['date'],
@@ -153,8 +165,8 @@ def insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_p
 
     mydb.commit()
 
-
-    sql = "INSERT INTO ActivityPeriod (ID, Date, TimeFrom, TimeUntil, Label)    VALUES (%s, %s, %s, %s, %s)"
+def insert_db_act_period(df_act_period, mydb, mycursor):
+    sql = "INSERT INTO Activity_period (ID, Date, TimeFrom, TimeUntil, Label)    VALUES (%s, %s, %s, %s, %s)"
 
     for row in zip(df_act_period['ID'],
                 df_act_period['date'],
@@ -166,10 +178,10 @@ def insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_p
 
     mydb.commit()
 
+
 def main_function():
-    # mydb, mycursor = connect_to_database()
-    df_all_p_sorted, df_summary_all, df_act_period = get_all_day_result()
-    # insert_to_database(mydb, mycursor, df_all_p_sorted, df_summary_all, df_act_period)
+    mydb, mycursor = connect_to_database()
+    df_all_p_sorted, df_summary_all, df_act_period = get_all_day_result(mydb, mycursor)
 
 # print(df_summary_all)
 

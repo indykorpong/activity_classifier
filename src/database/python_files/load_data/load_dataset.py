@@ -12,13 +12,12 @@ import math
 
 from os import listdir, walk
 from os.path import isfile, join
-
-
-# In[3]:
-
-
 from sklearn.preprocessing import MinMaxScaler
 
+basepath = ''
+# basepath = '/var/www/html/python/mysql_connect/'
+datapath = basepath + 'DDC_Data/'
+mypath = basepath + 'DDC_Data/raw/'
 
 # # Define Timestamp Methods
 
@@ -83,9 +82,6 @@ def calc_t_period(dates,secs):
 
 
 # Retrieve file directories from Google Drive
-mypath = 'DDC_Data/raw/'
-basepath = ''
-
 dir_ = [f for f in walk(mypath)]
 # print(dir_)
 
@@ -703,6 +699,7 @@ def load_all_data(all_subjects):
     subj_all = []
     ts_all = []
     hr_all = []
+    df_all = pd.DataFrame()
 
     for idx in range(itr):
 
@@ -735,6 +732,7 @@ def load_all_data(all_subjects):
         subj_all.append(subj_i)
         ts_all.append(ts_i)
         hr_all.append(hr_i)
+        df_all.append(df1)
 
     y_all = np.hstack(y_all)
     subj_all = np.hstack(subj_all)
@@ -743,4 +741,4 @@ def load_all_data(all_subjects):
 
     print("Finished loading")
 
-    return X_all, y_all, subj_all, ts_all, hr_all
+    return df_all, X_all, y_all, subj_all, ts_all, hr_all

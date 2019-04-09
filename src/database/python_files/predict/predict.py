@@ -14,7 +14,8 @@ import math
 import pickle
 import sys
 
-path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 from os import listdir, walk
@@ -30,12 +31,12 @@ from tqdm import tqdm
 
 # # Load Cleaned Data
 
+basepath = '/var/www/html/python/mysql_connect/'
+datapath = basepath + 'DDC_Data/'
+mypath = basepath + 'DDC_Data/raw/'
 
-datapath = 'DDC_Data/'
-basepath = ''
 
-
-def predict_label(cleaned_data_path):
+def predict_label(df_all_p, cleaned_data_path=''):
 
     filename = basepath + 'model/knn_model_patients.pkl'
 
@@ -48,8 +49,8 @@ def predict_label(cleaned_data_path):
     # # Load Data
 
 
-    df_all_p_sorted = pd.read_csv(cleaned_data_path, index_col=0)
-
+    # df_all_p_sorted = pd.read_csv(cleaned_data_path, index_col=0)
+    df_all_p_sorted = df_all_p
 
     # # Predict Labels
 
