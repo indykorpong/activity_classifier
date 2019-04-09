@@ -13,7 +13,8 @@ import os
 import math
 import sys
 
-path_to_module = 'C:/Users/Indy/Desktop/python_files/'
+# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 from os import listdir, walk
@@ -33,7 +34,7 @@ def get_duration_per_act(i, df_summary_all):
 
         return convert_time_to_string(duration_per_act)
 
-def get_summarized_data(predicted_data_path):
+def get_summarized_data(df_all_p, predicted_data_path=''):
         # # Load Predicted Data
 
         subj_range = np.hstack((np.arange(2001,2002),np.arange(3001,3006)))
@@ -41,7 +42,8 @@ def get_summarized_data(predicted_data_path):
 
         # predicted_data_path = datapath + 'prediction/predicted_data_' + all_patients[0] + '_to_' + all_patients[-1] + '.csv'
 
-        df_all_p_sorted = pd.read_csv(predicted_data_path)
+        # df_all_p_sorted = pd.read_csv(predicted_data_path)
+        df_all_p_sorted = df_all_p
 
         df_date = df_all_p_sorted.copy()
         df_date['date'] = df_date['timestamp'].apply(lambda x: x.split(' ')[0])
