@@ -14,8 +14,13 @@ from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
 
-basepath = ''
-# basepath = '/var/www/html/python/mysql_connect/'
+on_server = True
+
+if(not on_server):
+    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
+else:
+    basepath = '/var/www/html/python/mysql_connect/'
+
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
 
@@ -477,6 +482,7 @@ def ai(subject_id, rec_date, start_time, end_time, df_timer):
     ai1 = calc_ai(df1)
 
     df1['AI'] = pd.Series(ai1)
+    df1['y_pred'] = pd.Series([None for i in range(df1.shape[0])])
 
     ts_, labels = prepare_time_periods(df_timer)
     ts, lb_color = prepare_color_labels(ts_, labels)
@@ -732,7 +738,7 @@ def load_all_data(all_subjects):
         subj_all.append(subj_i)
         ts_all.append(ts_i)
         hr_all.append(hr_i)
-        df_all.append(df1)
+        df_all = df_all.append(df1)
 
     y_all = np.hstack(y_all)
     subj_all = np.hstack(subj_all)

@@ -14,35 +14,51 @@ import math
 import mysql.connector
 import sys
 
-# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+on_server = True
+
+if(not on_server):
+    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+else:
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 
 sys.path.append(path_to_module)
 
 from os import listdir, walk
 from os.path import isfile, join
+from datetime import datetime
 
 from preprocess.data_preprocess import load_all_data, export_cleaned_data
 from predict.predict import predict_label, export_predicted_data
 from summarize.summarize import get_summarized_data, export_summarized_data
 
 from preprocess.copy_data import load_raw_data, load_raw_data_2, copy_one_day, copy_one_month, export_copied_data
+from insert_db.insert_db import insert_db_act_period, insert_db_all_day_summary, insert_db_patient, insert_db_status, reset_error_bool
 
 # # Set data path
 
-# datapath = 'DDC_Data/'
-# basepath = ''
-
-basepath = '/var/www/html/python/mysql_connect/'
+if(not on_server):
+    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
+else:
+    basepath = '/var/www/html/python/mysql_connect/'
+    
 datapath = basepath + 'DDC_Data/'
+mypath = basepath + 'DDC_Data/raw/'
 
 # # Connect to MySQL Database
 
 def connect_to_database():
+    
+    if(not on_server):
+        user = 'root'
+        passwd = "1amdjvr'LN"
+    else:
+        user = 'php'
+        passwd = 'HOD8912+php'
+
     mydb = mysql.connector.connect(
         host='localhost',
-        user='php',
-        passwd='HOD8912+php',
+        user=user,
+        passwd=passwd,
         database='cu_amd'
         )
 
@@ -52,136 +68,108 @@ def connect_to_database():
 
     return mydb, mycursor
 
-
-# # Load Dataset
-
-def get_all_patients_result():
-
-    subj_range = np.hstack((np.arange(2001,2002),np.arange(3001,3006)))
-    all_patients = [str(i) for i in subj_range]
-
-    # In[37]:
-
-
-    cleaned_data_path = datapath + 'cleaned/cleaned_data_' + all_patients[0] + '_to_' + all_patients[-1] + '.csv'
-    predicted_data_path = datapath + 'prediction/predicted_data_' + all_patients[0] + '_to_' + all_patients[-1] + '.csv'
-    all_day_summary_path = datapath + 'summary/all_day_summary_' + all_patients[0] + '_to_' + all_patients[-1] + '.csv'
-    act_period_path = datapath + 'summary/activity_period_' + all_patients[0] + '_to_' + all_patients[-1] + '.csv'
-
-
-    df_all_p_sorted = load_all_data(all_patients)
-    export_cleaned_data(df_all_p_sorted, cleaned_data_path)
-
-    # # Predict Labels
-
-    df_all_p_sorted = predict_label(predicted_data_path)
-    export_predicted_data(df_all_p_sorted, predicted_data_path)
-
-    # In[39]:
-
-    df_summary_all, df_act_period = get_summarized_data(predicted_data_path)
-    export_summarized_data(df_summary_all, df_act_period, all_day_summary_path, act_period_path)
-
-    return df_all_p_sorted, df_summary_all, df_act_period
-
 # # All Day Data
 
 # In[6]:
 
+def time_str_now():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+
+status_started = 0
+status_stopped = 1
+status_error = -1
 
 
-def get_all_day_result(mydb, mycursor):
-    # cleaned_data_path = datapath + 'cleaned/cleaned_data_9999_day.csv'
-    # predicted_data_path = datapath + 'prediction/predicted_data_9999.csv'
-    # all_day_summary_path = datapath + 'summary/all_day_summary_9999.csv'
-    # act_period_path = datapath + 'summary/activity_period_9999.csv'
+def get_all_day_result(mydb, mycursor, all_status):
+    # Load data
+    load_error, predict_error, summarize_error = reset_error_bool()
 
-    df_all_p = load_raw_data_2()
-    df_large = copy_one_month(df_all_p)
+    all_status[0] = status_started
+    start_time = time_str_now()
+    print(start_time)
+    insert_db_status('LOAD DATA', start_time, None, all_status[0], mydb, mycursor)
+    try:
+        df_all_p = load_raw_data_2()
+        print(df_all_p.head(5))
+        df_large = copy_one_month(df_all_p)
 
-    # export_copied_data(df_day, cleaned_data_path)
+        all_status[0] = status_stopped
+        stop_time = time_str_now()
+        insert_db_status('LOAD DATA', start_time, stop_time, all_status[0], mydb, mycursor)
+    except:
+        load_error = True
+    
+    if(load_error):
+        all_status[0] = status_error
+        stop_time = time_str_now()
+        insert_db_status('LOAD DATA', start_time, stop_time, all_status[0], mydb, mycursor)
+        
+    # Predict
 
-    df_all_p_sorted = predict_label(df_large)
-    insert_db_patient(df_all_p_sorted, mydb, mycursor)
+    chunk_length = 10000
+    for i in range(0, df_large.shape[0]-chunk_length, chunk_length):
+        load_error, predict_error, summarize_error = reset_error_bool()
 
-    # export_predicted_data(df_all_p_sorted, predicted_data_path)
+        df_chunk = df_large[i:i+chunk_length]
+        df_chunk = df_chunk.reset_index(drop=True)
+        
+        all_status[1] = status_started
+        start_time = time_str_now()
+        insert_db_status('PREDICT', start_time, None, all_status[1], mydb, mycursor)
+        # try:
+        print("started predicting")
+        df_all_p_sorted = predict_label(df_chunk, i)
+        print(df_all_p_sorted.head(5))
+        insert_db_patient(df_all_p_sorted, mydb, mycursor)
+        print("finished predicting")
 
-    # # Analyze Predicted Results
+        all_status[1] = status_stopped
+        stop_time = time_str_now()
+        print(all_status[1], start_time, stop_time)
+        insert_db_status('PREDICT', start_time, stop_time, all_status[1], mydb, mycursor)
+        # except:
+        #     print("prediction error")
+        #     predict_error = True
 
-    df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted)
-    insert_db_all_day_summary(df_summary_all, mydb, mycursor)
-    insert_db_act_period(df_act_period, mydb, mycursor)
+        if(predict_error):
+            all_status[1] = status_stopped
+            stop_time = time_str_now()
+            print(all_status[1], start_time, stop_time)
+            insert_db_status('PREDICT', start_time, stop_time, all_status[1], mydb, mycursor)
 
-    # export_summarized_data(df_summary_all, df_act_period, all_day_summary_path, act_period_path)
+        # # Analyze Predicted Results
 
-    return df_all_p_sorted, df_summary_all, df_act_period
+        all_status[2] = status_started
+        start_time = time_str_now()
+        insert_db_status('SUMMARIZE RESULTS', start_time, None, all_status[2], mydb, mycursor)
+        try:
+            df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted)
+            print('finished summarizing')
+            insert_db_all_day_summary(df_summary_all, mydb, mycursor)
+            insert_db_act_period(df_act_period, mydb, mycursor)
 
+            all_status[2] = status_stopped
+            stop_time = time_str_now()
+            insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
+        except:
+            summarize_error = True
 
-# # Insert to Database
+        if(summarize_error):
+            all_status[2] = status_error
+            stop_time = time_str_now()
+            insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
 
-# In[37]:
-
-def insert_db_patient(df_all_p_sorted, mydb, mycursor):
-    sql = "INSERT INTO Patient (ID, Dateandtime, X, Y, Z, HR, Label) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-
-    for row in zip(df_all_p_sorted['ID'],
-                df_all_p_sorted['timestamp'],
-                df_all_p_sorted['x'],
-                df_all_p_sorted['y'],
-                df_all_p_sorted['z'],
-                df_all_p_sorted['HR'],
-                df_all_p_sorted['y_pred']):
-
-        mycursor.execute(sql, row)
-
-    mydb.commit()
-
-
-def insert_db_all_day_summary(df_summary_all, mydb, mycursor):
-    sql = "INSERT INTO All_day_summary (ID, Date, TimeFrom, TimeUntil, ActualFrom, ActualUntil,    DurationSit, DurationSleep, DurationStand, DurationWalk, TotalDuration,    CountSit, CountSleep, CountStand, CountWalk,    CountActive, CountInactive,    CountTotalActiveness, CountTransition, DurationPerTransition)    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-
-    for row in zip(df_summary_all['ID'],
-                df_summary_all['date'],
-                df_summary_all['from'],
-                df_summary_all['to'],
-                df_summary_all['from actual'],
-                df_summary_all['to actual'],
-                df_summary_all['sit'],
-                df_summary_all['sleep'],
-                df_summary_all['stand'],
-                df_summary_all['walk'],
-                df_summary_all['total'],
-                df_summary_all['sit count'],
-                df_summary_all['sleep count'],
-                df_summary_all['stand count'],
-                df_summary_all['walk count'],
-                df_summary_all['inactive count'],
-                df_summary_all['active count'],
-                df_summary_all['total count'],
-                df_summary_all['transition count'],
-                df_summary_all['duration per action']):
-
-        mycursor.execute(sql, row)
-
-    mydb.commit()
-
-def insert_db_act_period(df_act_period, mydb, mycursor):
-    sql = "INSERT INTO Activity_period (ID, Date, TimeFrom, TimeUntil, Label)    VALUES (%s, %s, %s, %s, %s)"
-
-    for row in zip(df_act_period['ID'],
-                df_act_period['date'],
-                df_act_period['from'],
-                df_act_period['to'],
-                df_act_period['y_pred']):
-
-        mycursor.execute(sql, row)
-
-    mydb.commit()
-
+    return all_status
 
 def main_function():
     mydb, mycursor = connect_to_database()
-    df_all_p_sorted, df_summary_all, df_act_period = get_all_day_result(mydb, mycursor)
+
+    status_load = 0
+    status_predict = 0
+    status_summary = 0
+    all_status = [status_load, status_predict, status_summary]
+
+    all_status = get_all_day_result(mydb, mycursor, all_status)
 
 # print(df_summary_all)
 

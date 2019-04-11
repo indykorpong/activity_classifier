@@ -14,9 +14,16 @@ import math
 import time
 import datetime
 import sys
+import csv
 
-path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-# path_to_module = '/var/www/html/python/mysql_connect/python_files'
+from io import StringIO
+
+on_server = True
+
+if(not on_server):
+    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+else:
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 from datetime import timedelta, date
@@ -29,12 +36,11 @@ from load_data.load_dataset import load_all_data, load_acc, load_hr, load_timer,
 
 # # Load Raw Data
 
-# mypath = 'DDC_Data/raw/'
-# datapath = 'DDC_Data/'
-# basepath = ''
+if(not on_server):
+    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
+else:
+    basepath = '/var/www/html/python/mysql_connect/'
 
-basepath = ''
-# basepath = '/var/www/html/python/mysql_connect/'
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
 
@@ -82,7 +88,6 @@ def load_raw_data():
     return df_all_p
 
 def load_raw_data_2():
-
     df_all_p, X_all_p, y_all_p, subj_all_p, ts_all_p, hr_all_p = load_all_data(all_patients)
     df_all_p = df_all_p.reset_index(drop=True)
 
@@ -96,9 +101,18 @@ def copy_one_day(df_all_p):
     T = 0.16
     freq = 1/T
     oneday = 24*60*60
+    n_days = 1
+
+    pbar = tqdm(total=int(n_days*oneday*freq))
 
     while(df_day.shape[0]<=int(oneday*freq)):
         df_day = df_day.append(df_all_p, sort=False)
+
+        update_val = int(df_all_p.shape[0])
+        print(update_val)
+        pbar.update(update_val)
+
+    pbar.close()
 
     df_day = df_day[:int(oneday*freq)]
     df_day = df_day.reset_index(drop=True)
@@ -120,43 +134,62 @@ def copy_one_day(df_all_p):
 
 # In[45]:
 
-import csv
-
-from io import BytesIO
+T = 0.16
+freq = 1/T
+oneday = 24*60*60
+n_days = 3
 
 def copy_dataframe(df_all_p):
-    output = BytesIO()
-    csv_writer = csv.writer(output, delimiter=',')
+    output = StringIO()
+    writer = csv.writer(output, delimiter=',')
 
-    T = 0.16
-    freq = 1/T
-    oneday = 24*60*60
-    n_days = 10
+    list_df = df_all_p.to_dict(orient='split')['data']
 
-    df_data_list = df_all_p.to_dict(orient='split')['data']
+    # copy_length = int(n_days*oneday*freq)
+    copy_length = 30000
+    df_length = int(len(list_df))
 
-    pbar = tqdm(total=int(n_days*oneday*freq))
+    # write first row or index row
 
+    cols = list(df_all_p.columns.values)
+    writer.writerow(cols)
+    print(copy_length, df_length)
+
+    for c in cols:
+        if(df_all_p[c].dtypes!=str):
+            print('changed')
+            df_all_p[c] = df_all_p[c].astype(str)
+
+    # start copying
+
+    pbar = tqdm(total=copy_length)
     count = 0
-    while(count<=int(n_days*oneday*freq)):
-        for row in df_data_list:
-            csv_writer.writerow(row)
-            count += 1
-            pbar.update(1)
+
+    while(True):
+        for i in range(len(list_df)):
+            writer.writerow(list_df[i])
+
+        count += df_length
+        pbar.update(df_length)
+
+        if(count>=copy_length):
+            break
 
     pbar.close()
-
+    
     output.seek(0) # we need to get back to the start of the BytesIO
-    df = pd.read_csv(output)
 
-    df = df[:int(oneday*freq)]
-    df = df.reset_index(drop=True)
+    df_large = pd.read_csv(output)
 
-    return df
+    df_large = df_large[:int(n_days*oneday*freq)]
+    df_large = df_large.reset_index(drop=True)
+
+    print(df_large.head(5))
+
+    return df_large
 
 def copy_one_month(df_all_p):
     # df_day = pd.DataFrame()
-
     df_day = copy_dataframe(df_all_p)
 
     df_day['ID'] = pd.Series(['9999' for i in range(df_day.shape[0])])
@@ -166,29 +199,19 @@ def copy_one_month(df_all_p):
     dt = '2019-03-28'
     date_t = datetime.datetime.fromtimestamp(time.mktime(time.strptime(dt, date_format)))
     midnight = '00:00:00.000'
+    # copy_length = int(n_days*oneday*freq)
+    copy_length = 30000
 
     time_list = np.array([(date_t + timedelta(seconds=calc_sec(midnight)+(T*i))).strftime(date_format) + ' ' + 
-                calc_ts(calc_sec(midnight)+(T*i)) for i in range(int(n_days*oneday*freq))])
+                calc_ts(calc_sec(midnight)+(T*i)) for i in range(copy_length)])
 
     df_day['timestamp'] = pd.Series(time_list)
     print(time_list.shape)
 
     return df_day
 
-
     # # Store Cleaned Data in CSV
 
 def export_copied_data(df_day, cleaned_data_path):
 
     df_day.to_csv(cleaned_data_path)
-
-
-# cleaned_data_path_day = datapath + 'cleaned/cleaned_data_9999_day.csv'
-# cleaned_data_path_month = datapath + 'cleaned/cleaned_data_9999_month.csv'
-
-# df_all_p = load_raw_data_2()
-# df_day = copy_one_day(df_all_p)
-# export_copied_data(df_day, cleaned_data_path_day)
-
-# df_month = copy_one_month(df_all_p)
-# export_copied_data(df_month, cleaned_data_path_month)

@@ -1,4 +1,4 @@
--- create database if not exists cu_amd;
+create database if not exists cu_amd;
 use cu_amd;
 
 create table Patient(
@@ -10,7 +10,7 @@ create table Patient(
 	HR decimal(7,4),
     ActivityIndex decimal(9,8),
     Label int,
-    primary key(ID, Dateandtime)
+    primary key(ID, DateAndTime)
     );
  
 create table AllDaySummary(
@@ -42,4 +42,12 @@ create table ActivityPeriod(
     TimeFrom time not null,
     TimeUntil time not null,
     Label int
+);
+
+create table Logging(
+    StartTime datetime(3) not null,
+    StopTime datetime(3),
+    ProcessName varchar(255) not null,
+    ProcessStatus int not null,
+    primary key(StartTime, ProcessName)
 );

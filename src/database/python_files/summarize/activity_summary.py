@@ -11,8 +11,12 @@ import numpy as np
 import pandas as pd
 import sys
 
-# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+on_server = True
+
+if(not on_server):
+    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+else:
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 from load_data.load_dataset import calc_sec, calc_ts
