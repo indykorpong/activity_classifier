@@ -12,8 +12,12 @@ import matplotlib.pyplot as plt
 import math
 import sys
 
-# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+on_server = True
+
+if(not on_server):
+    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+else:
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 # In[1]:

@@ -13,8 +13,12 @@ import os
 import math
 import sys
 
-# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+on_server = True
+
+if(not on_server):
+    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+else:
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 from os import listdir, walk
@@ -40,9 +44,6 @@ def get_summarized_data(df_all_p, predicted_data_path=''):
         subj_range = np.hstack((np.arange(2001,2002),np.arange(3001,3006)))
         all_patients = [str(i) for i in subj_range]
 
-        # predicted_data_path = datapath + 'prediction/predicted_data_' + all_patients[0] + '_to_' + all_patients[-1] + '.csv'
-
-        # df_all_p_sorted = pd.read_csv(predicted_data_path)
         df_all_p_sorted = df_all_p
 
         df_date = df_all_p_sorted.copy()

@@ -14,8 +14,12 @@ import math
 import pickle
 import sys
 
-# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+on_server = True
+
+if(not on_server):
+    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+else:
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 from os import listdir, walk
@@ -31,14 +35,15 @@ from tqdm import tqdm
 
 # # Load Cleaned Data
 
-basepath = '/var/www/html/python/mysql_connect/'
-datapath = basepath + 'DDC_Data/'
-mypath = basepath + 'DDC_Data/raw/'
+if(not on_server):
+    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
+else:
+    basepath = '/var/www/html/python/mysql_connect/'
 
 
-def predict_label(df_all_p, cleaned_data_path=''):
+def predict_label(df_all_p, chunk_length):
 
-    filename = basepath + 'model/knn_model_patients.pkl'
+    filename = basepath + 'model/knn_model.pkl'
 
     model = pickle.load(open(filename,'rb'))
 
@@ -53,7 +58,6 @@ def predict_label(df_all_p, cleaned_data_path=''):
     df_all_p_sorted = df_all_p
 
     # # Predict Labels
-
 
     cols = ['x','y','z']
 
@@ -71,7 +75,6 @@ def predict_label(df_all_p, cleaned_data_path=''):
         label_grp = x[0]
 
         df_grp = grouped.get_group(label_grp)
-        print(df_grp.shape[0])
 
         X_all_p = np.array(df_grp[cols].to_dict('split')['data'])
         y_all_p = np.zeros(X_all_p.shape[0])
@@ -88,7 +91,10 @@ def predict_label(df_all_p, cleaned_data_path=''):
 
     y_pred_walk = np.array(combine_2(X_all, y_pred_all))
 
-    df_all_p_sorted['y_pred'] = pd.Series(y_pred_walk)
+    cols = list(df_all_p_sorted.columns.values)
+
+    for i in range(df_all_p_sorted.shape[0]):
+        df_all_p_sorted.loc[i, 'y_pred'] = y_pred_walk[i]
 
     return df_all_p_sorted
 

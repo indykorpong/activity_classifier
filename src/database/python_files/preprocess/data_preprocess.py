@@ -13,8 +13,12 @@ import os
 import math
 import sys
 
-# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+on_server = True
+
+if(not on_server):
+    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+else:
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 sys.path.append(path_to_module)
 
 from os import listdir, walk
@@ -25,11 +29,11 @@ from load_data.load_dataset import load_acc, load_hr, load_timer, merge_acc_and_
 
 # # Load Raw Data
 
-# mypath = 'DDC_Data/raw/'
-# datapath = 'DDC_Data/'
-# basepath = ''
-
-basepath = '/var/www/html/python/mysql_connect/'
+if(not on_server):
+    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
+else:
+    basepath = '/var/www/html/python/mysql_connect/'
+    
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
 
