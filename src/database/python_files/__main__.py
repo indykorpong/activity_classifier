@@ -14,28 +14,28 @@ import math
 import mysql.connector
 import sys
 
-if(__name__=='__main__'):
-    on_server = int(sys.argv[1])
-    at_home = 'C:'
+on_server = int(sys.argv[1])
 
-    if(on_server==0):
-        path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+at_home = 'C:'
 
-    elif(on_server==1):
-        path_to_module = '/var/www/html/python/mysql_connect/python_files'
+if(on_server==0):
+    path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
 
-    sys.path.append(path_to_module)
-    os.chdir(path_to_module)
+elif(on_server==1):
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 
-    # # Set data path
+sys.path.append(path_to_module)
+os.chdir(path_to_module)
 
-    if(on_server==0):
-        basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
-    else:
-        basepath = '/var/www/html/python/mysql_connect/'
-        
-    datapath = basepath + 'DDC_Data/'
-    mypath = basepath + 'DDC_Data/raw/'
+# # Set data path
+
+if(on_server==0):
+    basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
+else:
+    basepath = '/var/www/html/python/mysql_connect/'
+    
+datapath = basepath + 'DDC_Data/'
+mypath = basepath + 'DDC_Data/raw/'
 
 print('argv[1] =', on_server)
 
@@ -60,7 +60,7 @@ def connect_to_database():
     
     if(not on_server):
         user = 'root'
-        passwd = "1amdjvr'LN"
+        passwd = ""
     else:
         user = 'php'
         passwd = 'HOD8912+php'
@@ -98,21 +98,24 @@ def get_all_day_result(mydb, mycursor, all_status):
     start_time = time_str_now()
     print(start_time)
     insert_db_status('LOAD DATA', start_time, None, all_status[0], mydb, mycursor)
-    try:
-        df_all_p = load_raw_data_2()
-        print(df_all_p.head(5))
-        df_large = copy_one_month(df_all_p)
+    # try:
+    df_all_p = load_raw_data_2()
+    print(df_all_p.head(5))
+    df_large = copy_one_month(df_all_p)
 
-        all_status[0] = status_stopped
-        stop_time = time_str_now()
-        insert_db_status('LOAD DATA', start_time, stop_time, all_status[0], mydb, mycursor)
-    except:
-        load_error = True
+    all_status[0] = status_stopped
+    stop_time = time_str_now()
+    insert_db_status('LOAD DATA', start_time, stop_time, all_status[0], mydb, mycursor)
+    # except:
+    #     load_error = True
+    #     print('error')
     
     if(load_error):
         all_status[0] = status_error
         stop_time = time_str_now()
         insert_db_status('LOAD DATA', start_time, stop_time, all_status[0], mydb, mycursor)
+
+    
         
     # Predict
 
@@ -179,7 +182,7 @@ def main_function():
     status_summary = 0
     all_status = [status_load, status_predict, status_summary]
 
-    insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
+    insert_db_status('SUMMARIZE RESULTS', datetime.now(), datetime.now(), all_status[2], mydb, mycursor)
 
     all_status = get_all_day_result(mydb, mycursor, all_status)
 

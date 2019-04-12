@@ -15,28 +15,28 @@ from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
 
-if(__name__=='__main__'):
-    on_server = int(sys.argv[1])
-    at_home = 'C:'
+on_server = int(sys.argv[1])
 
-    if(on_server==0):
-        path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+at_home = 'C:'
 
-    elif(on_server==1):
-        path_to_module = '/var/www/html/python/mysql_connect/python_files'
+if(on_server==0):
+    path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
 
-    sys.path.append(path_to_module)
-    os.chdir(path_to_module)
+elif(on_server==1):
+    path_to_module = '/var/www/html/python/mysql_connect/python_files'
 
-    # # Set data path
+sys.path.append(path_to_module)
+os.chdir(path_to_module)
 
-    if(on_server==0):
-        basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
-    else:
-        basepath = '/var/www/html/python/mysql_connect/'
-        
-    datapath = basepath + 'DDC_Data/'
-    mypath = basepath + 'DDC_Data/raw/'
+# # Set data path
+
+if(on_server==0):
+    basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
+else:
+    basepath = '/var/www/html/python/mysql_connect/'
+    
+datapath = basepath + 'DDC_Data/'
+mypath = basepath + 'DDC_Data/raw/'
 
 # # Define Timestamp Methods
 
@@ -180,10 +180,6 @@ def fix_thai_language():
 def identify_subj_id(i, all_subjects):
     subject_id = all_subjects[i]
 
-    directory = basepath + 'Graphs/' + subject_id
-
-    if(not os.path.exists(directory)):
-        os.makedirs(directory)
 
     return subject_id
 
