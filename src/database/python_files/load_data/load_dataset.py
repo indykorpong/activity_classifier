@@ -9,20 +9,34 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import math
+import sys
 
 from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
 
-on_server = True
+if(__name__=='__main__'):
+    on_server = int(sys.argv[1])
+    at_home = 'C:'
 
-if(not on_server):
-    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
-else:
-    basepath = '/var/www/html/python/mysql_connect/'
+    if(on_server==0):
+        path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
 
-datapath = basepath + 'DDC_Data/'
-mypath = basepath + 'DDC_Data/raw/'
+    elif(on_server==1):
+        path_to_module = '/var/www/html/python/mysql_connect/python_files'
+
+    sys.path.append(path_to_module)
+    os.chdir(path_to_module)
+
+    # # Set data path
+
+    if(on_server==0):
+        basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
+    else:
+        basepath = '/var/www/html/python/mysql_connect/'
+        
+    datapath = basepath + 'DDC_Data/'
+    mypath = basepath + 'DDC_Data/raw/'
 
 # # Define Timestamp Methods
 
@@ -82,40 +96,37 @@ def calc_t_period(dates,secs):
 
 
 # # Load Dataset
+if(__name__=='__main__'):
+    # Retrieve file directories from path
+    dir_ = [f for f in walk(mypath)]
+    # print(dir_)
 
-# In[7]:
+    dir = list(dir_[0])
+    dir[1] = sorted(dir[1])
 
+    outer_path = dir[0]
+    sub_path = dir[1]
 
-# Retrieve file directories from Google Drive
-dir_ = [f for f in walk(mypath)]
-# print(dir_)
+    folders = [join(outer_path,d) for d in sub_path]
 
-dir = list(dir_[0])
-dir[1] = sorted(dir[1])
-
-outer_path = dir[0]
-sub_path = dir[1]
-
-folders = [join(outer_path,d) for d in sub_path]
-
-files = []
-for fd in folders:
-    temp_f = [f for f in listdir(fd) if isfile(join(fd, f)) and f[-3:]=='csv' and f[5:9]!='data' and f[:4]==fd[-4:]]
-    temp_f = sorted(temp_f)
+    files = []
+    for fd in folders:
+        temp_f = [f for f in listdir(fd) if isfile(join(fd, f)) and f[-3:]=='csv' and f[5:9]!='data' and f[:4]==fd[-4:]]
+        temp_f = sorted(temp_f)
 
 
-# ## Retrieve All Timestamp Periods from a File
+    # ## Retrieve All Timestamp Periods from a File
 
-# In[47]:
+    # In[47]:
 
 
-all_subjects = []
+    all_subjects = []
 
-for i in range(1001,1013):
-    all_subjects.append(str(i))
+    for i in range(1001,1013):
+        all_subjects.append(str(i))
 
-for i in range(2001,2003):
-    all_subjects.append(str(i))
+    for i in range(2001,2003):
+        all_subjects.append(str(i))
 
 # print(all_subjects)
 

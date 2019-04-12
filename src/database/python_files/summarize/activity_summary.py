@@ -10,14 +10,30 @@ import ruptures as rpt
 import numpy as np
 import pandas as pd
 import sys
+import os
 
-on_server = True
+if(__name__=='__main__'):
+    on_server = int(sys.argv[1])
+    at_home = 'C:'
 
-if(not on_server):
-    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-else:
-    path_to_module = '/var/www/html/python/mysql_connect/python_files'
-sys.path.append(path_to_module)
+    if(on_server==0):
+        path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+
+    elif(on_server==1):
+        path_to_module = '/var/www/html/python/mysql_connect/python_files'
+
+    sys.path.append(path_to_module)
+    os.chdir(path_to_module)
+
+    # # Set data path
+
+    if(on_server==0):
+        basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
+    else:
+        basepath = '/var/www/html/python/mysql_connect/'
+        
+    datapath = basepath + 'DDC_Data/'
+    mypath = basepath + 'DDC_Data/raw/'
 
 from load_data.load_dataset import calc_sec, calc_ts
 from predict.preprocessing import convert_time_to_string

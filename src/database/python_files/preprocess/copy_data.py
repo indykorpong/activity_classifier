@@ -18,13 +18,28 @@ import csv
 
 from io import StringIO
 
-on_server = True
+if(__name__=='__main__'):
+    on_server = int(sys.argv[1])
+    at_home = 'C:'
 
-if(not on_server):
-    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-else:
-    path_to_module = '/var/www/html/python/mysql_connect/python_files'
-sys.path.append(path_to_module)
+    if(on_server==0):
+        path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
+
+    elif(on_server==1):
+        path_to_module = '/var/www/html/python/mysql_connect/python_files'
+
+    sys.path.append(path_to_module)
+    os.chdir(path_to_module)
+
+    # # Set data path
+
+    if(on_server==0):
+        basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
+    else:
+        basepath = '/var/www/html/python/mysql_connect/'
+        
+    datapath = basepath + 'DDC_Data/'
+    mypath = basepath + 'DDC_Data/raw/'
 
 from datetime import timedelta, date
 from os import listdir, walk
@@ -33,16 +48,6 @@ from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 
 from load_data.load_dataset import load_all_data, load_acc, load_hr, load_timer, merge_acc_and_hr, calc_sec, calc_ts
-
-# # Load Raw Data
-
-if(not on_server):
-    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
-else:
-    basepath = '/var/www/html/python/mysql_connect/'
-
-datapath = basepath + 'DDC_Data/'
-mypath = basepath + 'DDC_Data/raw/'
 
 # In[3]:
 
