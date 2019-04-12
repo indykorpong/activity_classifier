@@ -14,14 +14,31 @@ import math
 import mysql.connector
 import sys
 
-on_server = True
+if(__name__=='__main__'):
+    on_server = int(sys.argv[1])
+    at_home = 'C:'
 
-if(not on_server):
-    path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-else:
-    path_to_module = '/var/www/html/python/mysql_connect/python_files'
+    if(on_server==0):
+        path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
 
-sys.path.append(path_to_module)
+    elif(on_server==1):
+        path_to_module = '/var/www/html/python/mysql_connect/python_files'
+
+    sys.path.append(path_to_module)
+    os.chdir(path_to_module)
+
+    # # Set data path
+
+    if(on_server==0):
+        basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
+    else:
+        basepath = '/var/www/html/python/mysql_connect/'
+        
+    datapath = basepath + 'DDC_Data/'
+    mypath = basepath + 'DDC_Data/raw/'
+
+print('argv[1] =', on_server)
+
 
 from os import listdir, walk
 from os.path import isfile, join
@@ -34,15 +51,8 @@ from summarize.summarize import get_summarized_data, export_summarized_data
 from preprocess.copy_data import load_raw_data, load_raw_data_2, copy_one_day, copy_one_month, export_copied_data
 from insert_db.insert_db import insert_db_act_period, insert_db_all_day_summary, insert_db_patient, insert_db_status, reset_error_bool
 
-# # Set data path
 
-if(not on_server):
-    basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
-else:
-    basepath = '/var/www/html/python/mysql_connect/'
-    
-datapath = basepath + 'DDC_Data/'
-mypath = basepath + 'DDC_Data/raw/'
+
 
 # # Connect to MySQL Database
 
@@ -168,6 +178,8 @@ def main_function():
     status_predict = 0
     status_summary = 0
     all_status = [status_load, status_predict, status_summary]
+
+    insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
 
     all_status = get_all_day_result(mydb, mycursor, all_status)
 
