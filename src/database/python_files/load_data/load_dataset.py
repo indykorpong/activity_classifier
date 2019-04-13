@@ -17,7 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 on_server = int(sys.argv[1])
 
-at_home = 'C:'
+at_home = ''
 
 if(on_server==0):
     path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'

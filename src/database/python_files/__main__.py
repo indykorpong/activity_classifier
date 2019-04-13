@@ -16,7 +16,7 @@ import sys
 
 on_server = int(sys.argv[1])
 
-at_home = 'C:'
+at_home = ''
 
 if(on_server==0):
     path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
@@ -58,9 +58,12 @@ from insert_db.insert_db import insert_db_act_period, insert_db_all_day_summary,
 
 def connect_to_database():
     
-    if(not on_server):
+    if(not on_server and at_home==''):
         user = 'root'
-        passwd = ""
+        passwd = "1amdjvr'LN"
+    elif(not on_server and at_home=='C:'):
+        user = 'root'
+        passwd = ''
     else:
         user = 'php'
         passwd = 'HOD8912+php'
@@ -119,7 +122,7 @@ def get_all_day_result(mydb, mycursor, all_status):
         
     # Predict
 
-    chunk_length = 10000
+    chunk_length = 100000
     for i in range(0, df_large.shape[0]-chunk_length, chunk_length):
         load_error, predict_error, summarize_error = reset_error_bool()
 
@@ -138,16 +141,16 @@ def get_all_day_result(mydb, mycursor, all_status):
 
         all_status[1] = status_stopped
         stop_time = time_str_now()
-        print(all_status[1], start_time, stop_time)
+        print(all_status, start_time, stop_time)
         insert_db_status('PREDICT', start_time, stop_time, all_status[1], mydb, mycursor)
         # except:
         #     print("prediction error")
         #     predict_error = True
 
         if(predict_error):
-            all_status[1] = status_stopped
+            all_status[1] = status_error
             stop_time = time_str_now()
-            print(all_status[1], start_time, stop_time)
+            print(all_status, start_time, stop_time)
             insert_db_status('PREDICT', start_time, stop_time, all_status[1], mydb, mycursor)
 
         # # Analyze Predicted Results
@@ -155,22 +158,24 @@ def get_all_day_result(mydb, mycursor, all_status):
         all_status[2] = status_started
         start_time = time_str_now()
         insert_db_status('SUMMARIZE RESULTS', start_time, None, all_status[2], mydb, mycursor)
-        try:
-            df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted)
-            print('finished summarizing')
-            insert_db_all_day_summary(df_summary_all, mydb, mycursor)
-            insert_db_act_period(df_act_period, mydb, mycursor)
+        # try:
+        df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted)
+        print('finished summarizing')
+        insert_db_all_day_summary(df_summary_all, mydb, mycursor)
+        insert_db_act_period(df_act_period, mydb, mycursor)
 
-            all_status[2] = status_stopped
-            stop_time = time_str_now()
-            insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
-        except:
-            summarize_error = True
+        all_status[2] = status_stopped
+        stop_time = time_str_now()
+        insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
+        # except:
+        #     summarize_error = True
 
         if(summarize_error):
             all_status[2] = status_error
             stop_time = time_str_now()
             insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
+
+    print('all status', all_status)
 
     return all_status
 
@@ -182,7 +187,7 @@ def main_function():
     status_summary = 0
     all_status = [status_load, status_predict, status_summary]
 
-    insert_db_status('SUMMARIZE RESULTS', datetime.now(), datetime.now(), all_status[2], mydb, mycursor)
+    insert_db_status('SUMMARIZE RESULTS', datetime.now(), datetime.now(), status_error, mydb, mycursor)
 
     all_status = get_all_day_result(mydb, mycursor, all_status)
 

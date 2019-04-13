@@ -20,7 +20,7 @@ from io import StringIO
 
 on_server = int(sys.argv[1])
 
-at_home = 'C:'
+at_home = ''
 
 if(on_server==0):
     path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
@@ -143,6 +143,8 @@ T = 0.16
 freq = 1/T
 oneday = 24*60*60
 n_days = 3
+copy_length = int(n_days*oneday*freq)
+# copy_length = 30000
 
 def copy_dataframe(df_all_p):
     output = StringIO()
@@ -150,8 +152,7 @@ def copy_dataframe(df_all_p):
 
     list_df = df_all_p.to_dict(orient='split')['data']
 
-    # copy_length = int(n_days*oneday*freq)
-    copy_length = 30000
+    
     df_length = int(len(list_df))
 
     # write first row or index row
@@ -199,16 +200,13 @@ def copy_one_month(df_all_p):
 
     df_day['ID'] = pd.Series(['9999' for i in range(df_day.shape[0])])
 
-    date_format = '%Y-%m-%d'
+    datetime_format = '%Y-%m-%d %H:%M:%S.%f'
 
-    dt = '2019-03-28'
-    date_t = datetime.datetime.fromtimestamp(time.mktime(time.strptime(dt, date_format)))
+    dt = '2019-04-01 00:00:00.000'
+    date_t = datetime.datetime.fromtimestamp(time.mktime(time.strptime(dt, datetime_format)))
     midnight = '00:00:00.000'
-    # copy_length = int(n_days*oneday*freq)
-    copy_length = 30000
-
-    time_list = np.array([(date_t + timedelta(seconds=calc_sec(midnight)+(T*i))).strftime(date_format) + ' ' + 
-                calc_ts(calc_sec(midnight)+(T*i)) for i in range(copy_length)])
+    
+    time_list = np.array([(date_t + timedelta(seconds=calc_sec(midnight)+(T*i))).strftime(datetime_format) for i in range(copy_length)])
 
     df_day['timestamp'] = pd.Series(time_list)
     print(time_list.shape)
