@@ -14,7 +14,7 @@ import os
 
 on_server = int(sys.argv[1])
     
-at_home = ''
+at_home = 'C:'
 
 if(on_server==0):
     path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
@@ -71,7 +71,7 @@ def get_period_for_each_label(subject_id, df_date):
                 label_period.append([df_get_date.loc[keep]['date'], df_get_date.loc[keep]['time'],
                                      df_get_date.loc[i-1]['time'], df_get_date.loc[i-1]['y_pred']])
 
-                period_list[df_get_date.loc[i-1]['y_pred']].append(
+                period_list[int(df_get_date.loc[i-1]['y_pred'])].append(
                     [date[0], df_get_date.loc[keep]['time'], df_get_date.loc[i-1]['time']])
 
                 keep = i
@@ -80,7 +80,7 @@ def get_period_for_each_label(subject_id, df_date):
                 label_period.append([df_get_date.loc[keep]['date'], df_get_date.loc[keep]['time'],
                                      df_get_date.loc[i]['time'], df_get_date.loc[i]['y_pred']])
 
-                period_list[df_get_date.loc[i]['y_pred']].append(
+                period_list[int(df_get_date.loc[i]['y_pred'])].append(
                     [date[0], df_get_date.loc[keep]['time'], df_get_date.loc[i]['time']])
 
     return label_period, df_grp_date
@@ -178,6 +178,10 @@ def get_new_label_period(label_period, df_grp_date):
         date = date_[0]
 
         label_period_date = [lb_date for lb_date in label_period if lb_date[date_idx]==date]
+
+        print('label period date')
+        print(label_period_date[0])
+        print(label_period_date[-1])
 
         floor_start = get_floor_start(label_period_date[0][s_idx])
         ceil_finish = get_ceil_finish(label_period_date[-1][f_idx])

@@ -15,7 +15,7 @@ import sys
 
 on_server = int(sys.argv[1])
     
-at_home = ''
+at_home = 'C:'
 
 if(on_server==0):
         path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
@@ -53,11 +53,8 @@ def get_duration_per_act(i, df_summary_all):
 
         return convert_time_to_string(duration_per_act)
 
-def get_summarized_data(df_all_p, predicted_data_path=''):
+def get_summarized_data(df_all_p, all_patients):
         # # Load Predicted Data
-
-        subj_range = np.hstack((np.arange(2001,2002),np.arange(3001,3006)))
-        all_patients = [str(i) for i in subj_range]
 
         df_all_p_sorted = df_all_p
 

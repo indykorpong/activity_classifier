@@ -16,7 +16,7 @@ import sys
 
 on_server = int(sys.argv[1])
    
-at_home = ''
+at_home = 'C:'
 
 if(on_server==0):
     path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
@@ -103,6 +103,8 @@ def predict_label(df_all_p, chunk_length):
 
     for i in range(df_all_p_sorted.shape[0]):
         df_all_p_sorted.loc[i, 'y_pred'] = y_pred_walk[i]
+
+    df_all_p_sorted['y_pred'] = df_all_p_sorted['y_pred'].astype(int)
 
     return df_all_p_sorted
 
