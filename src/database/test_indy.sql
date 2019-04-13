@@ -29,8 +29,8 @@ create table AllDaySummary(
     CountSleep int,
     CountStand int,
     CountWalk int,
-    CountActive int,
     CountInactive int,
+    CountActive int,
     CountTotalActiveness int,
 	CountTransition int,
     DurationPerTransition time
