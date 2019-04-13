@@ -20,7 +20,7 @@ from io import StringIO
 
 on_server = int(sys.argv[1])
 
-at_home = ''
+at_home = 'C:'
 
 if(on_server==0):
     path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
@@ -48,6 +48,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 
 from load_data.load_dataset import load_all_data, load_acc, load_hr, load_timer, merge_acc_and_hr, calc_sec, calc_ts
+from insert_db.insert_db import get_patients_acc_hr
 
 # In[3]:
 
@@ -58,41 +59,29 @@ all_patients = [str(i) for i in subj_range]
 
 
 # In[4]:
-def load_raw_data():
+def load_raw_data(all_patients, date_to_retrieve, mydb, mycursor):
 
-    df_all_p = pd.DataFrame()
+    df_acc, df_hr = get_patients_acc_hr(all_patients, date_to_retrieve, mydb, mycursor)
 
-    for subject_id in all_patients:
-        print("Loading {0}'s data".format(subject_id))
+    df1 = merge_acc_and_hr(df_acc, df_hr)
 
-        acc_filepath = mypath + subject_id + '/' + subject_id + '-log_acc.csv'
-        df_raw = pd.read_csv(acc_filepath, header=None, names=['x','y','z','timestamp'])
+    cols = ['x','y','z']
+    xyz_ = df1[cols].to_dict('split')['data']
+    xyz_new = MinMaxScaler().fit_transform(xyz_)
 
-        df_timer, rec_date, start_time, end_time = load_timer(subject_id)
-        df_filt = load_acc(subject_id, rec_date, start_time, end_time)
-        df_hr = load_hr(subject_id, rec_date, start_time, end_time)
+    for i in range(len(cols)):
+        df1[cols[i]] = pd.Series(xyz_new.transpose()[i])
 
-        df1 = merge_acc_and_hr(df_filt, df_hr)
-
-        cols = ['x','y','z']
-        xyz_ = df1[cols].to_dict('split')['data']
-        xyz_new = MinMaxScaler().fit_transform(xyz_)
-
-        for i in range(len(cols)):
-            df1[cols[i]] = pd.Series(xyz_new.transpose()[i])
-
-        X_i_p = np.array(df1[cols].to_dict(orient='split')['data'])
-        subj_i_p = np.array([subject_id for i in range(X_i_p.shape[0])])
-
-        df_all_p = df_all_p.append(df1, sort=False)
+    X_i_p = np.array(df1[cols].to_dict(orient='split')['data'])
+    subj_i_p = np.array([subject_id for i in range(X_i_p.shape[0])])
 
     print('Finished Loading')
 
-    df_all_p = df_all_p.reset_index(drop=True)
+    df_1 = df_1.reset_index(drop=True)
 
-    return df_all_p
+    return df_1
 
-def load_raw_data_2():
+def load_raw_data_2(all_patients):
     df_all_p, X_all_p, y_all_p, subj_all_p, ts_all_p, hr_all_p = load_all_data(all_patients)
     df_all_p = df_all_p.reset_index(drop=True)
 
@@ -100,49 +89,12 @@ def load_raw_data_2():
 
 # # Copy Data
 
-def copy_one_day(df_all_p):
-    df_day = pd.DataFrame()
-
-    T = 0.16
-    freq = 1/T
-    oneday = 24*60*60
-    n_days = 1
-
-    pbar = tqdm(total=int(n_days*oneday*freq))
-
-    while(df_day.shape[0]<=int(oneday*freq)):
-        df_day = df_day.append(df_all_p, sort=False)
-
-        update_val = int(df_all_p.shape[0])
-        print(update_val)
-        pbar.update(update_val)
-
-    pbar.close()
-
-    df_day = df_day[:int(oneday*freq)]
-    df_day = df_day.reset_index(drop=True)
-
-    df_day['ID'] = pd.Series(['9999' for i in range(df_day.shape[0])])
-
-    date_format = '%Y-%m-%d'
-
-    dt = '2019-03-28'
-    date_t = datetime.datetime.fromtimestamp(time.mktime(time.strptime(dt, date_format)))
-    midnight = '00:00:00.000'
-
-    time_list = np.array([(date_t + timedelta(seconds=calc_sec(midnight)+(T*i))).strftime(date_format) + ' ' + 
-                calc_ts(calc_sec(midnight)+(T*i)) for i in range(int(oneday*freq))])
-
-    df_day['timestamp'] = pd.Series(time_list)
-
-    return df_day
-
 # In[45]:
 
 T = 0.16
 freq = 1/T
 oneday = 24*60*60
-n_days = 3
+n_days = 1
 copy_length = int(n_days*oneday*freq)
 # copy_length = 30000
 
@@ -202,7 +154,7 @@ def copy_one_month(df_all_p):
 
     datetime_format = '%Y-%m-%d %H:%M:%S.%f'
 
-    dt = '2019-04-01 00:00:00.000'
+    dt = '2019-04-03 00:00:00.000'
     date_t = datetime.datetime.fromtimestamp(time.mktime(time.strptime(dt, datetime_format)))
     midnight = '00:00:00.000'
     

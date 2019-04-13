@@ -15,7 +15,7 @@ import os
 
 on_server = int(sys.argv[1])
 
-at_home = ''
+at_home = 'C:'
 
 if(on_server==0):
     path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
