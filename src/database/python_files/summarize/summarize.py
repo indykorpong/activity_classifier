@@ -47,11 +47,18 @@ def get_duration_per_act(i, df_summary_all):
         from_actual = df_summary_all.loc[i, 'from actual']
         to_actual = df_summary_all.loc[i, 'to actual']
         total_i = df_summary_all.loc[i, 'total count']
-        duration_actual = calc_sec(to_actual) - calc_sec(from_actual)
 
-        duration_per_act = duration_actual/total_i
+        if(total_i!=0):
+                print(i)
+                print('from actual:', from_actual)
+                print('to actual:', to_actual)
+                print('total i:', total_i)
+                duration_actual = calc_sec(to_actual) - calc_sec(from_actual)
 
-        return convert_time_to_string(duration_per_act)
+                duration_per_act = duration_actual/total_i
+                return convert_time_to_string(duration_per_act)
+        
+        return None
 
 def get_summarized_data(df_all_p, all_patients):
         # # Load Predicted Data
