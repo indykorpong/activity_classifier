@@ -49,37 +49,8 @@ from predict.predict import predict_label, export_predicted_data
 from summarize.summarize import get_summarized_data, export_summarized_data
 
 from preprocess.copy_data import load_raw_data, load_raw_data_2, copy_one_month, export_copied_data
-from insert_db.insert_db import insert_db_act_period, insert_db_all_day_summary, insert_db_patient, insert_db_status, reset_status
+from insert_db.insert_db import connect_to_database, insert_db_act_period, insert_db_all_day_summary, insert_db_patient, insert_db_status, reset_status
 
-
-
-
-# # Connect to MySQL Database
-
-def connect_to_database():
-    
-    if(not on_server and at_home==''):
-        user = 'root'
-        passwd = "1amdjvr'LN"
-    elif(not on_server and at_home=='C:'):
-        user = 'root'
-        passwd = ''
-    else:
-        user = 'php'
-        passwd = 'HOD8912+php'
-
-    mydb = mysql.connector.connect(
-        host='localhost',
-        user=user,
-        passwd=passwd,
-        database='cu_amd'
-        )
-
-    print(mydb)
-
-    mycursor = mydb.cursor()
-
-    return mydb, mycursor
 
 # # All Day Data
 
@@ -93,18 +64,19 @@ status_stopped = 1
 status_error = -1
 status_sleep = -2
 
-def get_all_day_result(all_status, all_patients, date_to_retrieve, mydb, mycursor):
+def get_all_day_result(all_status, all_patients, date_to_retrieve):
     # Load data
     all_status = reset_status()
 
     all_status[0] = status_started
     start_time = time_str_now()
     print(start_time)
-    insert_db_status('LOAD DATA', start_time, None, all_status[0], mydb, mycursor)
+    insert_db_status('LOAD DATA', start_time, None, all_status[0])
     # try:
-    df_all_p = load_raw_data(all_patients, date_to_retrieve, mydb, mycursor)
+    df_all_p = load_raw_data(all_patients, date_to_retrieve)
     print(df_all_p.head(5))
-    df_large = copy_one_month(df_all_p)
+    # df_large = copy_one_month(df_all_p)
+    df_large = df_all_p
 
     all_status[0] = status_stopped
     
@@ -112,13 +84,18 @@ def get_all_day_result(all_status, all_patients, date_to_retrieve, mydb, mycurso
     #     all_status[0] = status_error 
 
     stop_time = time_str_now()
-    insert_db_status('LOAD DATA', start_time, stop_time, all_status[0], mydb, mycursor)
+    insert_db_status('LOAD DATA', start_time, stop_time, all_status[0])
     print(all_status)
         
     # Predict
 
     chunk_length = 100000
-    for i in range(0, df_large.shape[0]-chunk_length, chunk_length):
+    if(df_large.shape[0]>chunk_length):
+        loop_length = df_large.shape[0] - chunk_length
+    else:
+        loop_length = df_large.shape[0]
+
+    for i in range(0, loop_length, chunk_length):
         all_status = reset_status()
 
         df_chunk = df_large[i:i+chunk_length]
@@ -126,12 +103,12 @@ def get_all_day_result(all_status, all_patients, date_to_retrieve, mydb, mycurso
         
         all_status[1] = status_started
         start_time = time_str_now()
-        insert_db_status('PREDICT', start_time, None, all_status[1], mydb, mycursor)
+        insert_db_status('PREDICT', start_time, None, all_status[1])
         # try:
         print("started predicting")
         df_all_p_sorted = predict_label(df_chunk, i)
         print(df_all_p_sorted.head(5))
-        insert_db_patient(df_all_p_sorted, mydb, mycursor)
+        insert_db_patient(df_all_p_sorted)
         print("finished predicting")
 
         all_status[1] = status_stopped
@@ -141,18 +118,18 @@ def get_all_day_result(all_status, all_patients, date_to_retrieve, mydb, mycurso
 
         stop_time = time_str_now()
         print(all_status, start_time, stop_time)
-        insert_db_status('PREDICT', start_time, stop_time, all_status[1], mydb, mycursor)
+        insert_db_status('PREDICT', start_time, stop_time, all_status[1])
 
         # # Analyze Predicted Results
 
         all_status[2] = status_started
         start_time = time_str_now()
-        insert_db_status('SUMMARIZE RESULTS', start_time, None, all_status[2], mydb, mycursor)
+        insert_db_status('SUMMARIZE RESULTS', start_time, None, all_status[2])
         # try:
         df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted, all_patients)
         print('finished summarizing')
-        insert_db_all_day_summary(df_summary_all, mydb, mycursor)
-        insert_db_act_period(df_act_period, mydb, mycursor)
+        insert_db_all_day_summary(df_summary_all)
+        insert_db_act_period(df_act_period)
 
         all_status[2] = status_stopped
         
@@ -160,25 +137,23 @@ def get_all_day_result(all_status, all_patients, date_to_retrieve, mydb, mycurso
         #   all_status[2] = status_error
         
         stop_time = time_str_now()
-        insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2], mydb, mycursor)
+        insert_db_status('SUMMARIZE RESULTS', start_time, stop_time, all_status[2])
 
         print('all status', all_status)
 
     return all_status
 
 def main_function():
-    mydb, mycursor = connect_to_database()
-
     status_load = 0
     status_predict = 0
     status_summary = 0
     all_status = [status_load, status_predict, status_summary]
 
-    insert_db_status('SUMMARIZE RESULTS', datetime.now(), datetime.now(), status_error, mydb, mycursor)
+    # insert_db_status('SUMMARIZE RESULTS', datetime.now(), datetime.now(), status_error)
 
     all_patients = ['11']
     date_to_retrieve = '2019-04-10'
-    all_status = get_all_day_result(all_status, all_patients, date_to_retrieve, mydb, mycursor)
+    all_status = get_all_day_result(all_status, all_patients, date_to_retrieve)
 
 # print(df_summary_all)
 

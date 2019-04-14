@@ -59,8 +59,8 @@ def get_summarized_data(df_all_p, all_patients):
         df_all_p_sorted = df_all_p
 
         df_date = df_all_p_sorted.copy()
-        df_date['date'] = df_date['timestamp'].apply(lambda x: x.split(' ')[0])
-        df_date['time'] = df_date['timestamp'].apply(lambda x: x.split(' ')[1])
+        df_date['date'] = df_date['timestamp'].apply(lambda x: x.strftime('%y-%m-%d'))
+        df_date['time'] = df_date['timestamp'].apply(lambda x: x.strftime('%H:%M:%S.%f'))
 
         cols = ['ID','date','time','x','y','z','HR','y_pred']
         df_date = df_date[cols]
