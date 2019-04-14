@@ -41,6 +41,7 @@ mypath = basepath + 'DDC_Data/raw/'
 from os import listdir, walk
 from os.path import isfile, join
 
+from load_data.load_dataset import calc_ai
 from predict.preprocessing import prepare_impure_label
 from predict.classifier_alg import combine_2
 # In[1]:
@@ -70,7 +71,6 @@ def predict_label(df_all_p, chunk_length):
     cols = ['x','y','z']
 
     X_all = np.array(df_all_p_sorted[cols].to_dict('split')['data'])
-    y_all = np.zeros(X_all.shape[0])
 
     y_pred_all = []
     grouped = df_all_p_sorted.groupby('ID')
@@ -105,6 +105,8 @@ def predict_label(df_all_p, chunk_length):
         df_all_p_sorted.loc[i, 'y_pred'] = y_pred_walk[i]
 
     df_all_p_sorted['y_pred'] = df_all_p_sorted['y_pred'].astype(int)
+
+    df_all_p_sorted['AI'] = pd.Series(calc_ai(df_all_p_sorted))
 
     return df_all_p_sorted
 

@@ -48,6 +48,5 @@ create table Logging(
     StartTime datetime(3) not null,
     StopTime datetime(3),
     ProcessName varchar(255) not null,
-    ProcessStatus int not null,
-    primary key(StartTime, ProcessName)
+    ProcessStatus int not null
 );

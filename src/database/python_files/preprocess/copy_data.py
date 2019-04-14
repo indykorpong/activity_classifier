@@ -48,7 +48,7 @@ from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 
 from load_data.load_dataset import load_all_data, load_acc, load_hr, load_timer, merge_acc_and_hr, calc_sec, calc_ts
-from insert_db.insert_db import get_patients_acc_hr
+from insert_db.insert_db import get_patients_acc_hr, connect_to_database
 
 # In[3]:
 
@@ -59,9 +59,11 @@ all_patients = [str(i) for i in subj_range]
 
 
 # In[4]:
-def load_raw_data(all_patients, date_to_retrieve, mydb, mycursor):
+def load_raw_data(all_patients, date_to_retrieve):
 
-    df_acc, df_hr = get_patients_acc_hr(all_patients, date_to_retrieve, mydb, mycursor)
+    df_acc, df_hr = get_patients_acc_hr(all_patients, date_to_retrieve)
+    print(df_acc.head())
+    print(df_hr.head())
 
     df1 = merge_acc_and_hr(df_acc, df_hr)
 
@@ -73,13 +75,13 @@ def load_raw_data(all_patients, date_to_retrieve, mydb, mycursor):
         df1[cols[i]] = pd.Series(xyz_new.transpose()[i])
 
     X_i_p = np.array(df1[cols].to_dict(orient='split')['data'])
-    subj_i_p = np.array([subject_id for i in range(X_i_p.shape[0])])
+    # subj_i_p = np.array([subject_id for i in range(X_i_p.shape[0])])
 
     print('Finished Loading')
 
-    df_1 = df_1.reset_index(drop=True)
+    df1 = df1.reset_index(drop=True)
 
-    return df_1
+    return df1
 
 def load_raw_data_2(all_patients):
     df_all_p, X_all_p, y_all_p, subj_all_p, ts_all_p, hr_all_p = load_all_data(all_patients)

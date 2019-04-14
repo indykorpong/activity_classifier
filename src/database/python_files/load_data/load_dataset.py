@@ -11,6 +11,7 @@ import os
 import math
 import sys
 
+from decimal import *
 from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
@@ -280,16 +281,17 @@ def merge_acc_and_hr(df_filt, df_hr):
     hr_cnt = 0
 
     for i in range(len(df_filt)):
-        hr_time = df_hr.loc[hr_cnt,'timestamp'].split(' ')[1]
-        filt_time = df_filt.loc[i,'timestamp'].split(' ')[1]
+        hr_time = df_hr.loc[hr_cnt,'timestamp']
+        filt_time = df_filt.loc[i,'timestamp']
 
-        if(calc_sec(hr_time)<=calc_sec(filt_time)):
+        if(hr_time<=filt_time):
             if(hr_cnt<len(df_hr)-1):
                 hr_cnt += 1
         df_filt.loc[i,'HR'] = df_hr.loc[hr_cnt,'hr']
 
     # Normalize by dividing by g (standard gravity)
-    g = 9.8
+    getcontext().prec = 4
+    g = Decimal(9.8)
     df_filt.loc[:,'x'] = df_filt['x'].apply(lambda x: x/g)
     df_filt.loc[:,'y'] = df_filt['y'].apply(lambda x: x/g)
     df_filt.loc[:,'z'] = df_filt['z'].apply(lambda x: x/g)
