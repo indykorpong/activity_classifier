@@ -124,7 +124,16 @@ def insert_db_patient(df_all_p_sorted):
     # mydb.commit()
 
     cnx = get_sql_connection()
-    df_all_p_sorted.to_sql('Patient', cnx, schema='cu_amd', if_exists='append', index=False, index_label=None, chunksize=100000, dtype=None, method='multi')
+    
+    df_all_p_sorted = df_all_p_sorted.rename(columns={
+        'timestamp': 'DateAndTime',
+        'x': 'X',
+        'y': 'Y',
+        'z': 'Z',
+        'AI': 'ActivityIndex',
+        'y_pred': 'Label'
+    })
+    df_all_p_sorted.to_sql('Patient', cnx, schema='cu_amd', if_exists='replace', index=False, index_label=None, chunksize=100, dtype=None)
 
 
 def insert_db_all_day_summary(df_summary_all):

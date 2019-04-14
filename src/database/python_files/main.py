@@ -89,7 +89,7 @@ def get_all_day_result(all_status, all_patients, date_to_retrieve):
         
     # Predict
 
-    chunk_length = 100000
+    chunk_length = 1000
     if(df_large.shape[0]>chunk_length):
         loop_length = df_large.shape[0] - chunk_length
     else:

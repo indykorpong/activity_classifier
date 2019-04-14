@@ -61,6 +61,9 @@ def get_period_for_each_label(subject_id, df_date):
         df_get_date = df_grp_date.get_group(date[0])
         df_get_date = df_get_date.reset_index(drop=True)
 
+        print('df_get_date:', df_get_date)
+        df_get_date.to_csv('df_date_{}.csv'.format(date[0]))
+
         keep = 0
 
         for i in range(len(df_get_date)):
@@ -243,31 +246,37 @@ def get_new_label_period(label_period, df_grp_date):
 def get_all_periods_label(new_label_period, df_grp_date):
 
     all_periods_label = {}
+    print('new label period:', new_label_period)
+    print('df grp date:', df_grp_date)
 
     for date_ in df_grp_date:
         date = date_[0]
         all_periods_label[date] = []
+        print(date)
 
         new_label_period_date = [lb_date for lb_date in new_label_period if lb_date[date_idx]==date]
+        print(new_label_period_date)
 
-        start_time = calc_sec(new_label_period_date[0][s_idx])
-        finish_time = calc_sec(new_label_period_date[-1][f_idx])
+        if(len(new_label_period_date)!=0):
 
-        floor_start = start_time - (start_time%fivemin)
-        ceil_finish = finish_time - (finish_time%fivemin) + fivemin
+            start_time = calc_sec(new_label_period_date[0][s_idx])
+            finish_time = calc_sec(new_label_period_date[-1][f_idx])
 
-        for t_i in range(int(floor_start), int(ceil_finish), fivemin):
-            period_lb = [0 for i in range(len(LABELS))]
-            for prd in new_label_period_date:
-                if(calc_sec(prd[s_idx])>=t_i and
-                   calc_sec(prd[f_idx])<=t_i+fivemin and
-                   prd[lb_idx]!=-1
-                  ):
-                    period_lb[prd[lb_idx]] += calc_sec(prd[f_idx])-calc_sec(prd[s_idx])
-                    period_lb[prd[lb_idx]] = round(period_lb[prd[lb_idx]], 3)
+            floor_start = start_time - (start_time%fivemin)
+            ceil_finish = finish_time - (finish_time%fivemin) + fivemin
 
-            all_periods_label[date].append(np.hstack(([calc_ts(t_i), calc_ts(t_i+fivemin)],
-                                                 [convert_time_to_string(i) for i in period_lb])))
+            for t_i in range(int(floor_start), int(ceil_finish), fivemin):
+                period_lb = [0 for i in range(len(LABELS))]
+                for prd in new_label_period_date:
+                    if(calc_sec(prd[s_idx])>=t_i and
+                    calc_sec(prd[f_idx])<=t_i+fivemin and
+                    prd[lb_idx]!=-1
+                    ):
+                        period_lb[prd[lb_idx]] += calc_sec(prd[f_idx])-calc_sec(prd[s_idx])
+                        period_lb[prd[lb_idx]] = round(period_lb[prd[lb_idx]], 3)
+
+                all_periods_label[date].append(np.hstack(([calc_ts(t_i), calc_ts(t_i+fivemin)],
+                                                    [convert_time_to_string(i) for i in period_lb])))
 
     return all_periods_label
 
