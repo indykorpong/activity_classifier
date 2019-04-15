@@ -12,6 +12,8 @@ import pandas as pd
 import sys
 import os
 
+from datetime import date, datetime, timedelta
+
 on_server = int(sys.argv[1])
     
 at_home = 'C:'
@@ -50,7 +52,6 @@ LABELS = label_list
 
 def get_period_for_each_label(subject_id, df_date):
     label_period = []
-    period_list = [[] for i in range(len(label_list))]
 
     filter_ = [str(df_date.loc[i, 'ID'])==subject_id for i in range(len(df_date))]
     df_date_id = df_date[filter_]
@@ -61,8 +62,12 @@ def get_period_for_each_label(subject_id, df_date):
         df_get_date = df_grp_date.get_group(date[0])
         df_get_date = df_get_date.reset_index(drop=True)
 
-        print('df_get_date:', df_get_date)
-        df_get_date.to_csv('df_date_{}.csv'.format(date[0]))
+        # df_get_date.to_csv('df_date_{}.csv'.format(date[0]))
+        df_get_date['date'] = df_get_date['date'].apply(lambda x: datetime.strptime(x, '%y-%m-%d'))
+        df_get_date['time'] = df_get_date['time'].apply(lambda x: datetime.strptime(x, '%H:%M:%S.%f'))
+
+        print(df_get_date.head())
+        print(df_get_date.dtypes)
 
         keep = 0
 
@@ -74,17 +79,11 @@ def get_period_for_each_label(subject_id, df_date):
                 label_period.append([df_get_date.loc[keep]['date'], df_get_date.loc[keep]['time'],
                                      df_get_date.loc[i-1]['time'], df_get_date.loc[i-1]['y_pred']])
 
-                period_list[int(df_get_date.loc[i-1]['y_pred'])].append(
-                    [date[0], df_get_date.loc[keep]['time'], df_get_date.loc[i-1]['time']])
-
                 keep = i
 
             if(i==len(df_get_date)-1):
                 label_period.append([df_get_date.loc[keep]['date'], df_get_date.loc[keep]['time'],
                                      df_get_date.loc[i]['time'], df_get_date.loc[i]['y_pred']])
-
-                period_list[int(df_get_date.loc[i]['y_pred'])].append(
-                    [date[0], df_get_date.loc[keep]['time'], df_get_date.loc[i]['time']])
 
     return label_period, df_grp_date
 
@@ -108,16 +107,20 @@ def get_active_count(new_label_period, floor_start, ceil_finish):
     all_active_count = []
     all_trans = []
 
-    for t_i in range(int(floor_start), int(ceil_finish), fivemin):
-        active_count = [0 for i in range(2)]
-        act_count = [0 for i in range(len(label_list))]
+    empty_active_count = [0 for i in range(2)]
+    empty_act_count = [0 for i in range(len(label_list))]
+    zero_trans = 0
 
-        trans = 0
+    for t_i in range(int(floor_start), int(ceil_finish), fivemin):
+        active_count = empty_active_count
+        act_count = empty_act_count
+        trans = zero_trans
 
         for p_i in range(len(new_label_period)):
             prd = new_label_period[p_i]
 
             if(calc_sec(prd[s_idx])>=t_i and calc_sec(prd[f_idx])<=t_i+fivemin):
+                print(prd)
                 act_count[prd[lb_idx]] += 1
 
                 # count activities
@@ -137,9 +140,12 @@ def get_active_count(new_label_period, floor_start, ceil_finish):
                       (next_prd[lb_idx]==label_dict['sit'] or next_prd[lb_idx]==label_dict['sleep'])):
                         trans += 1
 
-        all_act_count.append(act_count)
-        all_active_count.append(active_count)
-        all_trans.append(trans)
+                all_act_count.append(act_count)
+                all_active_count.append(active_count)
+                all_trans.append(trans)
+    
+    if(len(all_act_count)==0):
+        return np.array([]), np.array([]), np.array([])
 
     return np.array(all_active_count), np.array(all_trans), np.array(all_act_count)
 
@@ -227,15 +233,25 @@ def get_new_label_period(label_period, df_grp_date):
         for t_i in range(int(floor_start), int(ceil_finish), fivemin):
             active_count_i, trans_count_i, act_count_i = get_active_count(new_label_period, t_i, t_i+fivemin)
 
-            all_act_count.append(act_count_i)
-            all_active_count.append(active_count_i)
-            all_trans_count.append(trans_count_i)
+            if(active_count_i.shape[0]!=0):
+                print()
+                print('date:', date)
+                print('time start, time end')
+                print(calc_ts(floor_start), calc_ts(ceil_finish))
+                print('activity count i:', act_count_i)
+                print('active count:', active_count_i)
+                print('trans count i:', trans_count_i)
+                all_act_count.append(act_count_i)
+                all_active_count.append(active_count_i)
+                all_trans_count.append(trans_count_i)
 
+    print('all act count')
+    print(all_act_count)
     all_active_count = np.array(all_active_count)
-    all_active_count = all_active_count.reshape((all_active_count.shape[0], 2))
+    # all_active_count = all_active_count.reshape((all_active_count.shape[0], 2))
 
     all_act_count = np.vstack([arr for arr in all_act_count])
-#     print(all_act_count)
+    
 
     return new_label_period, new_period_list, all_active_count, np.hstack(all_trans_count), all_act_count
 
@@ -311,7 +327,13 @@ def get_df_summary(all_periods_label, new_period_list, subject_id, all_active_co
     total_act = [convert_time_to_string(int(np.sum([calc_sec(act_summary[i][j]) for i in range(len(label_list))])))
                                         for j in range(act_summary[0].shape[0])]
 
-    all_act_count = np.transpose(all_act_count)
+    all_active_count = np.transpose(all_active_count)
+    all_active_count = np.vstack(all_active_count)
+    print('transposed all active count')
+    print(all_active_count)
+    print(all_active_count.shape)
+    print(all_active_count[0].shape)
+    print(all_active_count[0][0].shape)
     total_count = [ac[0]+ac[1] for ac in all_active_count]
     # duration_per_act = []
     # for total_i in total_count:
@@ -319,6 +341,25 @@ def get_df_summary(all_periods_label, new_period_list, subject_id, all_active_co
     #         duration_per_act.append(convert_time_to_string(60*60/total_i))
     #     else:
     #         duration_per_act.append(convert_time_to_string(0))
+
+    act_summary = np.array(act_summary)
+
+    print('shapes of date summary, activity summary, activity count, activeness count, and transition count')
+    print(date_summary.shape)
+    print(act_summary.shape)
+    print(all_act_count.shape)
+    print(all_active_count.shape)
+    print(all_trans_count.shape)
+
+    print('display date summary, from summary, to summary, activity summary, activity count, activeness count, and transition count')
+    print(date_summary)
+    print(from_summary)
+    print(to_summary)
+    print(act_summary)
+    print(all_act_count)
+    print(all_active_count)
+    print(all_trans_count)
+    print('---------')
 
     df_summary = pd.DataFrame({
         'ID': [subject_id for i in range(date_summary.shape[0])],
