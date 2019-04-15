@@ -186,8 +186,11 @@ def get_patients_acc_hr(all_patients, date_to_retrieve):
     df_acc = pd.DataFrame()
     df_hr = pd.DataFrame()
 
+    table = 'acc_log_2'
+    # table = 'accelerometer_log'
+
     for p in all_patients:
-        sql = "SELECT * FROM cu_amd.accelerometer_log where user_id='{}' and (event_timestamp > DATE_FORMAT('{}', '%y-%m-%d'));".format(p, date_to_retrieve)
+        sql = "SELECT * FROM cu_amd.{} where user_id='{}' and (event_timestamp > DATE_FORMAT('{}', '%y-%m-%d'));".format(table, p, date_to_retrieve)
         print(sql)
         mycursor.execute(sql)
         records = mycursor.fetchall()
