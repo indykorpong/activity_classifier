@@ -13,6 +13,8 @@ import os
 import math
 import sys
 
+from datetime import datetime
+
 on_server = int(sys.argv[1])
     
 at_home = 'C:'
@@ -53,7 +55,10 @@ def get_duration_per_act(i, df_summary_all):
                 print('from actual:', from_actual)
                 print('to actual:', to_actual)
                 print('total i:', total_i)
-                duration_actual = calc_sec(to_actual) - calc_sec(from_actual)
+                if(from_actual!=None and to_actual!=None):
+                        duration_actual = calc_sec(to_actual) - calc_sec(from_actual)
+                else:
+                        duration_actual = 0
 
                 duration_per_act = duration_actual/total_i
                 return convert_time_to_string(duration_per_act)
@@ -82,6 +87,8 @@ def get_summarized_data(df_all_p, all_patients):
         df_act_period = df_act_period.reset_index(drop=True)
 
         df_summary_all = df_summary_all.reset_index(drop=True)
+        df_summary_all.to_csv('df_summary.csv')
+        df_act_period.to_csv('df_act_period.csv')
 
         actual_from_all = []
         for i in range(len(df_summary_all)):
@@ -99,6 +106,7 @@ def get_summarized_data(df_all_p, all_patients):
                                         keep_start = calc_sec(df_act_period.loc[j, 'from'])
 
                                 elif(floor_start<=keep_start):
+                                        actual_from_all.append(datetime.strptime('00:00:00', '%H:%M:%S'))
                                         break
 
         actual_to_all = []
@@ -117,13 +125,16 @@ def get_summarized_data(df_all_p, all_patients):
 
                                         actual_to_all.append(df_act_period.loc[j, 'to'])
                                         break
+                                else:
+                                        actual_to_all.append(datetime.strptime('00:00:00', '%H:%M:%S'))
 
         df_summary_all['from actual'] = pd.Series(actual_from_all)
         df_summary_all['to actual'] = pd.Series(actual_to_all[::-1])
 
-        duration_per_act = [get_duration_per_act(i, df_summary_all) for i in range(len(df_summary_all))]
+        # duration_per_act = [get_duration_per_act(i, df_summary_all) for i in range(len(df_summary_all))]
 
-        df_summary_all['duration per action'] = pd.Series(duration_per_act)
+        df_summary_all['duration per action'] = pd.Series([None for i in range(df_summary_all.shape[0])])
+        # df_summary_all['duration per action'] = pd.Series(duration_per_act)
 
         return df_summary_all, df_act_period
 
