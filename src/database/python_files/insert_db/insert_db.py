@@ -4,6 +4,7 @@ import pandas as pd
 import csv
 import sys
 
+from datetime import datetime
 from mysql.connector import FieldType
 from sqlalchemy import create_engine
 
@@ -137,33 +138,60 @@ def insert_db_patient(df_all_p_sorted):
 
 
 def insert_db_all_day_summary(df_summary_all):
-    mydb, mycursor = connect_to_database()
-    sql = "INSERT INTO AllDaySummary (ID, Date, TimeFrom, TimeUntil, ActualFrom, ActualUntil,    DurationSit, DurationSleep, DurationStand, DurationWalk, TotalDuration,    CountSit, CountSleep, CountStand, CountWalk,    CountInactive, CountActive,    CountTotalActiveness, CountTransition, DurationPerTransition)    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    # mydb, mycursor = connect_to_database()
+    # sql = "INSERT INTO AllDaySummary (ID, Date, TimeFrom, TimeUntil, ActualFrom, ActualUntil,    DurationSit, DurationSleep, DurationStand, DurationWalk, TotalDuration,    CountSit, CountSleep, CountStand, CountWalk,    CountInactive, CountActive,    CountTotalActiveness, CountTransition, DurationPerTransition)    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
-    for row in zip(df_summary_all['ID'],
-                df_summary_all['date'],
-                df_summary_all['from'],
-                df_summary_all['to'],
-                df_summary_all['from actual'],
-                df_summary_all['to actual'],
-                df_summary_all['sit'],
-                df_summary_all['sleep'],
-                df_summary_all['stand'],
-                df_summary_all['walk'],
-                df_summary_all['total'],
-                df_summary_all['sit count'],
-                df_summary_all['sleep count'],
-                df_summary_all['stand count'],
-                df_summary_all['walk count'],
-                df_summary_all['inactive count'],
-                df_summary_all['active count'],
-                df_summary_all['total count'],
-                df_summary_all['transition count'],
-                df_summary_all['duration per action']):
+    # for row in zip(df_summary_all['ID'],
+    #             df_summary_all['date'],
+    #             df_summary_all['from'],
+    #             df_summary_all['to'],
+    #             df_summary_all['from actual'],
+    #             df_summary_all['to actual'],
+    #             df_summary_all['sit'],
+    #             df_summary_all['sleep'],
+    #             df_summary_all['stand'],
+    #             df_summary_all['walk'],
+    #             df_summary_all['total'],
+    #             df_summary_all['sit count'],
+    #             df_summary_all['sleep count'],
+    #             df_summary_all['stand count'],
+    #             df_summary_all['walk count'],
+    #             df_summary_all['inactive count'],
+    #             df_summary_all['active count'],
+    #             df_summary_all['total count'],
+    #             df_summary_all['transition count'],
+    #             [datetime.strptime('00:00:00', '%H:%M:%S') for i in range(df_summary_all.shape[0])]):
 
-        mycursor.execute(sql, row)
+        # mycursor.execute(sql, row)
 
-    mydb.commit()
+    # mydb.commit()
+
+    cnx = get_sql_connection()
+    df_summary_all = df_summary_all.rename(columns={
+        'timestamp': 'DateAndTime',
+        'date': 'Date',
+        'from': 'TimeFrom',
+        'to': 'TimeUntil',
+        'from actual': 'ActualFrom',
+        'to actual': 'ActualUntil',
+        'sit': 'DurationSit',
+        'sleep': 'DurationSleep',
+        'stand': 'DurationStand',
+        'walk': 'DurationWalk',
+        'total': 'TotalDuration',
+        'sit count': 'CountSit',
+        'sleep count': 'CountSleep',
+        'stand count': 'CountStand',
+        'walk count': 'CountWalk',
+        'inactive count': 'CountInactive',
+        'active count': 'CountActive',
+        'total count': 'CountTotalActiveness',
+        'transition count': 'CountTransition',
+        'duration per action': 'DurationPerTransition'
+    })
+    
+    df_summary_all.to_sql('AllDaySummary', cnx, schema='cu_amd', if_exists='replace', index=False, index_label=None, chunksize=100, dtype=None)
+
 
 def insert_db_act_period(df_act_period):
     mydb, mycursor = connect_to_database()
