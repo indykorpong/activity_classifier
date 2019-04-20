@@ -67,20 +67,17 @@ def get_duration_per_act(i, df_summary_all):
 
 def get_summarized_data(df_all_p, all_patients):
         # # Load Predicted Data
-
-        df_all_p_sorted = df_all_p
-
-        df_date = df_all_p_sorted.copy()
-        df_date['date'] = df_date['timestamp'].apply(lambda x: x.strftime('%y-%m-%d'))
+        df_date = df_all_p.copy()
+        df_date['date'] = df_date['timestamp'].apply(lambda x: x.strftime('%Y-%m-%d'))
         df_date['time'] = df_date['timestamp'].apply(lambda x: x.strftime('%H:%M:%S.%f'))
 
         cols = ['ID','date','time','x','y','z','HR','y_pred']
         df_date = df_date[cols]
 
-
         # # Summarize Data
-
         df_summary_all, df_act_period = get_df_summary_all(all_patients, df_date)
+        if(df_summary_all.empty and df_act_period.empty):
+                return df_summary_all, df_act_period
 
         cols = ['ID', 'date', 'from', 'to', 'y_pred']
         df_act_period = df_act_period[cols]
@@ -90,6 +87,7 @@ def get_summarized_data(df_all_p, all_patients):
         df_summary_all.to_csv('df_summary.csv')
         df_act_period.to_csv('df_act_period.csv')
 
+        # get actual time (from, until)
         actual_from_all = []
         for i in range(len(df_summary_all)):
                 keep_start = -1
@@ -132,22 +130,8 @@ def get_summarized_data(df_all_p, all_patients):
         df_summary_all['to actual'] = pd.Series(actual_to_all[::-1])
 
         # duration_per_act = [get_duration_per_act(i, df_summary_all) for i in range(len(df_summary_all))]
-
-        df_summary_all['duration per action'] = pd.Series([None for i in range(df_summary_all.shape[0])])
         # df_summary_all['duration per action'] = pd.Series(duration_per_act)
 
+        df_summary_all['duration per action'] = pd.Series([None for i in range(df_summary_all.shape[0])])
+
         return df_summary_all, df_act_period
-
-
-def export_summarized_data(df_summary_all, df_act_period, all_day_summary_path, act_period_path):
-        cols = ['ID', 'date', 'from', 'to', 'from actual', 'to actual',
-                'sit', 'sleep', 'stand', 'walk', 'total',
-                'sit count', 'sleep count', 'stand count', 'walk count',
-                'inactive count', 'active count', 'total count', 'transition count', 'duration per action']
-        df_summary_all = df_summary_all[cols]
-
-        cols = ['ID', 'date', 'from', 'to', 'y_pred']
-        df_act_period = df_act_period[cols]
-
-        df_summary_all.to_csv(all_day_summary_path)
-        df_act_period.to_csv(act_period_path)

@@ -280,14 +280,18 @@ def merge_acc_and_hr(df_filt, df_hr):
     # Fill in missing HRs
     hr_cnt = 0
 
-    for i in range(len(df_filt)):
-        hr_time = df_hr.loc[hr_cnt,'timestamp']
-        filt_time = df_filt.loc[i,'timestamp']
+    # !!! If HR data is missing, then don't fill in the HR field with None !!!
+    if(not df_hr.empty):
+        for i in range(len(df_filt)):
+            hr_time = df_hr.loc[hr_cnt,'timestamp']
+            filt_time = df_filt.loc[i,'timestamp']
 
-        if(hr_time<=filt_time):
-            if(hr_cnt<len(df_hr)-1):
-                hr_cnt += 1
-        df_filt.loc[i,'HR'] = df_hr.loc[hr_cnt,'hr']
+            if(hr_time<=filt_time):
+                if(hr_cnt<len(df_hr)-1):
+                    hr_cnt += 1
+            df_filt.loc[i,'HR'] = df_hr.loc[hr_cnt,'hr']
+    else:
+        df_filt['HR'] = pd.Series([None for i in range(df_filt.shape[0])])
 
     # Normalize by dividing by g (standard gravity)
     getcontext().prec = 4

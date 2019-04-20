@@ -33,7 +33,8 @@ create table AllDaySummary(
     CountActive int,
     CountTotalActiveness int,
 	CountTransition int,
-    DurationPerTransition time
+    DurationPerTransition time,
+    primary key(ID, Date, TimeFrom)
     );
        
 create table ActivityPeriod(
@@ -41,12 +42,14 @@ create table ActivityPeriod(
     Date date not null,
     TimeFrom time not null,
     TimeUntil time not null,
-    Label int
+    Label int,
+    primary key(ID, Date, TimeFrom)
 );
 
 create table Logging(
     StartTime datetime(3) not null,
     StopTime datetime(3),
     ProcessName varchar(255) not null,
-    ProcessStatus int not null
+    ProcessStatus int not null,
+    primary key(StartTime, ProcessName)
 );
