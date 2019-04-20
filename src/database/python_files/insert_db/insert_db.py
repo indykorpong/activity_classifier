@@ -4,7 +4,7 @@ import pandas as pd
 import csv
 import sys
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from mysql.connector import FieldType
 from sqlalchemy import create_engine
 
@@ -72,58 +72,46 @@ def set_safe_updates(enable):
 
 def insert_db_status(process_name, start_time, stop_time, status):
     mydb, mycursor = connect_to_database()
-    set_safe_updates(False)
+    # set_safe_updates(False)
 
-    update_sql = "UPDATE Logging SET ProcessStatus = %s WHERE StartTime = DATE_FORMAT(%s, '%y-%m-%d %H:%i:%S.%f') AND ProcessName = %s"
-    insert_sql = "INSERT INTO Logging (StartTime, StopTime, ProcessName, ProcessStatus) VALUES (DATE_FORMAT(%s, '%y-%m-%d %H:%i:%S.%f'), %s, %s, %s)"
+    datetime_format = '%Y-%m-%d %H:%i:%S.%f'
+
+    insert_sql = "INSERT INTO cu_amd.Logging (StartTime, StopTime, ProcessName, ProcessStatus) VALUES (DATE_FORMAT(%s, %s), %s, %s, %s)"
+    update_sql = "UPDATE cu_amd.Logging SET ProcessStatus = %s WHERE StartTime = %s AND ProcessName = %s"
+    
     error = False
 
     print(process_name, status)
 
     try:
+        if(status==status_started):
+            sql = insert_sql
+            values = (start_time, datetime_format, stop_time, process_name, status)
+
         if(status==status_stopped or status_error):
             sql = update_sql
-
-            values = (stop_time, start_time, process_name)
-            values2 = (status, start_time, process_name)
-        
-        elif(status==status_started):
-            sql = insert_sql
-            values = (start_time, stop_time, process_name, status)
+            values = (status, start_time, process_name)
 
     except:
         sql = update_sql
-        
-        values = (stop_time, start_time, process_name)
-        values2 = (status_error, start_time, process_name)
+        values = (status_error, start_time, process_name)
         error = True
+    
+    print(sql)
+    print('values:', values)
     
     mycursor.execute(sql, values)
     
     if(status==status_error or status==status_stopped or error):
-        mycursor.execute(update_sql, values2)
+        mycursor.execute(update_sql, values)
+        print('values:', values)
 
     mydb.commit()
 
-    set_safe_updates(True)
+    # set_safe_updates(True)
+    print('inserted status')
 
 def insert_db_patient(df_all_p_sorted):
-    # mydb, mycursor = connect_to_database()
-    # sql = "INSERT INTO Patient (ID, DateAndTime, X, Y, Z, HR, ActivityIndex, Label) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-
-    # for row in zip(df_all_p_sorted['ID'],
-    #             df_all_p_sorted['timestamp'],
-    #             df_all_p_sorted['x'],
-    #             df_all_p_sorted['y'],
-    #             df_all_p_sorted['z'],
-    #             df_all_p_sorted['HR'],
-    #             df_all_p_sorted['AI'],
-    #             df_all_p_sorted['y_pred']):
-
-    #     mycursor.execute(sql, row)
-
-    # mydb.commit()
-
     cnx = get_sql_connection()
     
     df_all_p_sorted = df_all_p_sorted.rename(columns={
@@ -134,41 +122,23 @@ def insert_db_patient(df_all_p_sorted):
         'AI': 'ActivityIndex',
         'y_pred': 'Label'
     })
-    df_all_p_sorted.to_sql('Patient', cnx, schema='cu_amd', if_exists='replace', index=False, index_label=None, chunksize=100, dtype=None)
+    df_all_p_sorted.to_sql('Patient', cnx, schema='cu_amd', if_exists='append', index=False, index_label=None, chunksize=100, dtype=None)
 
 
 def insert_db_all_day_summary(df_summary_all):
-    # mydb, mycursor = connect_to_database()
-    # sql = "INSERT INTO AllDaySummary (ID, Date, TimeFrom, TimeUntil, ActualFrom, ActualUntil,    DurationSit, DurationSleep, DurationStand, DurationWalk, TotalDuration,    CountSit, CountSleep, CountStand, CountWalk,    CountInactive, CountActive,    CountTotalActiveness, CountTransition, DurationPerTransition)    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    if(df_summary_all.empty):
+        print('df summary all is empty')
+        return
 
-    # for row in zip(df_summary_all['ID'],
-    #             df_summary_all['date'],
-    #             df_summary_all['from'],
-    #             df_summary_all['to'],
-    #             df_summary_all['from actual'],
-    #             df_summary_all['to actual'],
-    #             df_summary_all['sit'],
-    #             df_summary_all['sleep'],
-    #             df_summary_all['stand'],
-    #             df_summary_all['walk'],
-    #             df_summary_all['total'],
-    #             df_summary_all['sit count'],
-    #             df_summary_all['sleep count'],
-    #             df_summary_all['stand count'],
-    #             df_summary_all['walk count'],
-    #             df_summary_all['inactive count'],
-    #             df_summary_all['active count'],
-    #             df_summary_all['total count'],
-    #             df_summary_all['transition count'],
-    #             [datetime.strptime('00:00:00', '%H:%M:%S') for i in range(df_summary_all.shape[0])]):
-
-        # mycursor.execute(sql, row)
-
-    # mydb.commit()
+    cols = ['ID', 'date', 'from', 'to', 'from actual', 'to actual', 
+            'sit', 'sleep', 'stand', 'walk', 'total', 
+            'sit count', 'sleep count', 'stand count', 'walk count', 
+            'inactive count', 'active count', 'total count', 
+            'transition count', 'duration per action']
 
     cnx = get_sql_connection()
+    df_summary_all = df_summary_all[cols]
     df_summary_all = df_summary_all.rename(columns={
-        'timestamp': 'DateAndTime',
         'date': 'Date',
         'from': 'TimeFrom',
         'to': 'TimeUntil',
@@ -194,19 +164,21 @@ def insert_db_all_day_summary(df_summary_all):
 
 
 def insert_db_act_period(df_act_period):
-    mydb, mycursor = connect_to_database()
+    if(df_act_period.empty):
+        print('df activity period is empty')
+        return
 
-    sql = "INSERT INTO ActivityPeriod (ID, Date, TimeFrom, TimeUntil, Label)    VALUES (%s, %s, %s, %s, %s)"
-
-    for row in zip(df_act_period['ID'],
-                df_act_period['date'],
-                df_act_period['from'],
-                df_act_period['to'],
-                df_act_period['y_pred']):
-
-        mycursor.execute(sql, row)
-
-    mydb.commit()
+    cols = ['ID', 'date', 'from', 'to', 'y_pred']
+    
+    cnx = get_sql_connection()
+    df_act_period = df_act_period[cols]
+    df_act_period = df_act_period.rename(columns={
+        'date': 'Date',
+        'from': 'TimeFrom',
+        'to': 'TimeUntil',
+        'y_pred': 'Label'
+    })
+    df_act_period.to_sql('ActivityPeriod', cnx, schema='cu_amd', if_exists='replace', index=False, index_label=None, chunksize=100, dtype=None)
 
 def get_patients_acc_hr(all_patients, date_to_retrieve):
     mydb, mycursor = connect_to_database()
@@ -218,8 +190,14 @@ def get_patients_acc_hr(all_patients, date_to_retrieve):
     # table = 'accelerometer_log'
 
     for p in all_patients:
-        sql = "SELECT * FROM cu_amd.{} where user_id='{}' and (event_timestamp > DATE_FORMAT('{}', '%y-%m-%d'));".format(table, p, date_to_retrieve)
+        date_format = '%Y-%m-%d'
+        next_date = (datetime.strptime(date_to_retrieve, date_format) + timedelta(days=1)).strftime(date_format)
+
+        sql = "SELECT * FROM cu_amd.accelerometer_log where user_id='{}' \
+        and (event_timestamp > DATE_FORMAT('{}', '%Y-%m-%d')) \
+        and (event_timestamp < DATE_FORMAT('{}', '%Y-%m-%d'));".format(p, date_to_retrieve, next_date)
         print(sql)
+
         mycursor.execute(sql)
         records = mycursor.fetchall()
 
@@ -245,7 +223,9 @@ def get_patients_acc_hr(all_patients, date_to_retrieve):
 
         df_acc = df_acc.append(df_i)
 
-        sql2 = "SELECT * FROM cu_amd.hr_log where user_id='{}' and (event_timestamp > DATE_FORMAT('{}', '%y-%m-%d'));".format(p, date_to_retrieve)
+        sql2 = "SELECT * FROM cu_amd.hr_log where user_id='{}' \
+        and (event_timestamp > DATE_FORMAT('{}', '%Y-%m-%d')) \
+        and (event_timestamp < DATE_FORMAT('{}', '%Y-%m-%d'));".format(p, date_to_retrieve, next_date)
 
         mycursor.execute(sql2)
         records = mycursor.fetchall()
@@ -266,7 +246,15 @@ def get_patients_acc_hr(all_patients, date_to_retrieve):
 
         df_hr = df_hr.append(df_hr_i)
 
-    # mydb.commit()
-
     return df_acc, df_hr
 
+def select_from_logging():
+    mydb, mycursor = connect_to_database()
+    sql = "SELECT * FROM Logging;"
+
+    mycursor.execute(sql)
+    records = mycursor.fetchall()
+
+    print(sql)
+    for r in records:
+        print(r)

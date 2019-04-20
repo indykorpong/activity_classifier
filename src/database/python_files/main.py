@@ -42,14 +42,14 @@ print('argv[1] =', on_server)
 
 from os import listdir, walk
 from os.path import isfile, join
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from preprocess.data_preprocess import load_all_data, export_cleaned_data
-from predict.predict import predict_label, export_predicted_data
-from summarize.summarize import get_summarized_data, export_summarized_data
+from preprocess.data_preprocess import load_all_data
+from predict.predict import predict_label
+from summarize.summarize import get_summarized_data
 
-from preprocess.copy_data import load_raw_data, load_raw_data_2, copy_one_month, export_copied_data
-from insert_db.insert_db import connect_to_database, insert_db_act_period, insert_db_all_day_summary, insert_db_patient, insert_db_status, reset_status
+from preprocess.copy_data import load_raw_data, load_raw_data_2, copy_one_month
+from insert_db.insert_db import connect_to_database, insert_db_act_period, insert_db_all_day_summary, insert_db_patient, insert_db_status, select_from_logging, reset_status
 
 
 # # All Day Data
@@ -57,24 +57,35 @@ from insert_db.insert_db import connect_to_database, insert_db_act_period, inser
 # In[6]:
 
 def time_str_now():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
 status_started = 0
 status_stopped = 1
 status_error = -1
 status_sleep = -2
 
-def get_all_day_result(all_status, all_patients, date_to_retrieve):
+def get_all_day_result(all_patients, date_to_retrieve):
     # Load data
+    print('date to retrieve:', date_to_retrieve)
+
     all_status = reset_status()
 
     all_status[0] = status_started
     start_time = time_str_now()
     print(start_time)
+
     insert_db_status('LOAD DATA', start_time, None, all_status[0])
     # try:
     df_all_p = load_raw_data(all_patients, date_to_retrieve)
     print(df_all_p.head(5))
+    print()
+    print(df_all_p.tail(5))
+    print('...')
+    
+    if(df_all_p.empty):
+        print('empty')
+        return None
+
     # df_large = copy_one_month(df_all_p)
     df_large = df_all_p
 
@@ -97,6 +108,7 @@ def get_all_day_result(all_status, all_patients, date_to_retrieve):
 
     for i in range(0, loop_length, chunk_length):
         all_status = reset_status()
+        print('reset status:', all_status)
 
         df_chunk = df_large[i:i+chunk_length]
         df_chunk = df_chunk.reset_index(drop=True)
@@ -144,16 +156,19 @@ def get_all_day_result(all_status, all_patients, date_to_retrieve):
     return all_status
 
 def main_function():
-    status_load = 0
-    status_predict = 0
-    status_summary = 0
-    all_status = [status_load, status_predict, status_summary]
-
-    # insert_db_status('SUMMARIZE RESULTS', datetime.now(), datetime.now(), status_error)
-
     all_patients = ['11']
-    date_to_retrieve = '2019-04-10'
-    all_status = get_all_day_result(all_status, all_patients, date_to_retrieve)
+    
+    date_format = '%Y-%m-%d'
+    today = datetime.now()
+    starting_date = datetime.strptime('2019-04-18', date_format)
+    n_days = (today - starting_date).days
+
+    date_to_retrieve = [(starting_date+timedelta(days=i)).strftime(date_format) for i in range(n_days)]
+
+    for date_i in date_to_retrieve:
+        get_all_day_result(all_patients, date_i)
+
+    select_from_logging()
 
 # print(df_summary_all)
 
