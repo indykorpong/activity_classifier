@@ -144,8 +144,8 @@ def get_all_day_result(all_patients, date_to_retrieve):
         start_time = time_str_now()
         insert_db_status('SUMMARIZE RESULTS', start_time, None, all_status[2])
         # try:
-        df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted, all_patients)
         get_df_summary_all(df_all_p_sorted, all_patients)
+        df_summary_all, df_act_period = get_summarized_data(df_all_p_sorted, all_patients)
 
         print('finished summarizing')
         insert_db_all_day_summary(df_summary_all)
