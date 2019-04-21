@@ -67,19 +67,20 @@ def load_raw_data(all_patients, date_to_retrieve):
 
     df1 = merge_acc_and_hr(df_acc, df_hr)
 
-    cols = ['x','y','z']
-    xyz_ = df1[cols].to_dict('split')['data']
-    xyz_new = MinMaxScaler().fit_transform(xyz_)
+    if(not df1.empty):
+        cols = ['x','y','z']
+        xyz_ = df1[cols].to_dict('split')['data']
+        xyz_new = MinMaxScaler().fit_transform(xyz_)
 
-    for i in range(len(cols)):
-        df1[cols[i]] = pd.Series(xyz_new.transpose()[i])
+        for i in range(len(cols)):
+            df1[cols[i]] = pd.Series(xyz_new.transpose()[i])
 
-    X_i_p = np.array(df1[cols].to_dict(orient='split')['data'])
-    # subj_i_p = np.array([subject_id for i in range(X_i_p.shape[0])])
+        X_i_p = np.array(df1[cols].to_dict(orient='split')['data'])
+        # subj_i_p = np.array([subject_id for i in range(X_i_p.shape[0])])
 
-    print('Finished Loading')
+        print('Finished Loading')
 
-    df1 = df1.reset_index(drop=True)
+        df1 = df1.reset_index(drop=True)
 
     return df1
 
