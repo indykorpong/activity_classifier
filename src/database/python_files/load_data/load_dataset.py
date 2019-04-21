@@ -293,25 +293,25 @@ def merge_acc_and_hr(df_filt, df_hr):
     else:
         df_filt['HR'] = pd.Series([None for i in range(df_filt.shape[0])])
 
-    # Normalize by dividing by g (standard gravity)
-    getcontext().prec = 4
-    g = Decimal(9.8)
-    df_filt.loc[:,'x'] = df_filt['x'].apply(lambda x: x/g)
-    df_filt.loc[:,'y'] = df_filt['y'].apply(lambda x: x/g)
-    df_filt.loc[:,'z'] = df_filt['z'].apply(lambda x: x/g)
+    if(not df_filt.empty):
+        # Normalize by dividing by g (standard gravity)
+        getcontext().prec = 4
+        g = Decimal(9.8)
+        df_filt.loc[:,'x'] = df_filt['x'].apply(lambda x: x/g)
+        df_filt.loc[:,'y'] = df_filt['y'].apply(lambda x: x/g)
+        df_filt.loc[:,'z'] = df_filt['z'].apply(lambda x: x/g)
 
-    cols = ['x','y','z']
-    xyz_ = df_filt[cols].to_dict('split')['data']
-    xyz_new = MinMaxScaler().fit_transform(xyz_)
-#     print(np.array(xyz_new).shape)
+        cols = ['x','y','z']
+        xyz_ = df_filt[cols].to_dict('split')['data']
+        xyz_new = MinMaxScaler().fit_transform(xyz_)
+    #     print(np.array(xyz_new).shape)
 
-    for i in range(len(cols)):
-        df_filt[cols[i]] = pd.Series(xyz_new.transpose()[i])
+        for i in range(len(cols)):
+            df_filt[cols[i]] = pd.Series(xyz_new.transpose()[i])
 
-#     print(df_filt['x'])
+    #     print(df_filt['x'])
 
     return df_filt
-
 
 # # Calculate Activity Index
 

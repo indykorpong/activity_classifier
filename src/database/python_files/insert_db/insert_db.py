@@ -72,30 +72,33 @@ def set_safe_updates(enable):
 
 def insert_db_status(process_name, start_time, stop_time, status):
     mydb, mycursor = connect_to_database()
-    # set_safe_updates(False)
+    set_safe_updates(False)
 
     datetime_format = '%Y-%m-%d %H:%i:%S.%f'
 
     insert_sql = "INSERT INTO cu_amd.Logging (StartTime, StopTime, ProcessName, ProcessStatus) VALUES (DATE_FORMAT(%s, %s), %s, %s, %s)"
     update_sql = "UPDATE cu_amd.Logging SET ProcessStatus = %s WHERE StartTime = %s AND ProcessName = %s"
+    stoptime_sql = "UPDATE cu_amd.Logging SET StopTime = %s WHERE StartTime = %s AND ProcessName = %s"
     
     error = False
 
     print(process_name, status)
 
-    try:
-        if(status==status_started):
-            sql = insert_sql
-            values = (start_time, datetime_format, stop_time, process_name, status)
+    # try:
+    if(status==status_started):
+        sql = insert_sql
+        values = (start_time, datetime_format, stop_time, process_name, status)
 
-        if(status==status_stopped or status_error):
-            sql = update_sql
-            values = (status, start_time, process_name)
-
-    except:
+    elif(status==status_stopped or status==status_error):
         sql = update_sql
-        values = (status_error, start_time, process_name)
-        error = True
+        values = (status, start_time, process_name)
+
+        values2 = (stop_time, start_time, process_name)
+
+    # except:
+    #     sql = update_sql
+    #     values = (status_error, start_time, process_name)
+    #     error = True
     
     print(sql)
     print('values:', values)
@@ -106,9 +109,12 @@ def insert_db_status(process_name, start_time, stop_time, status):
         mycursor.execute(update_sql, values)
         print('values:', values)
 
+        mycursor.execute(stoptime_sql, values2)
+        print('values2:', values2)
+
     mydb.commit()
 
-    # set_safe_updates(True)
+    set_safe_updates(True)
     print('inserted status')
 
 def insert_db_patient(df_all_p_sorted):
@@ -186,14 +192,11 @@ def get_patients_acc_hr(all_patients, date_to_retrieve):
     df_acc = pd.DataFrame()
     df_hr = pd.DataFrame()
 
-    table = 'acc_log_2'
-    # table = 'accelerometer_log'
-
     for p in all_patients:
         date_format = '%Y-%m-%d'
         next_date = (datetime.strptime(date_to_retrieve, date_format) + timedelta(days=1)).strftime(date_format)
 
-        sql = "SELECT * FROM cu_amd.accelerometer_log where user_id='{}' \
+        sql = "SELECT * FROM cu_amd.acc_log_2 where user_id='{}' \
         and (event_timestamp > DATE_FORMAT('{}', '%Y-%m-%d')) \
         and (event_timestamp < DATE_FORMAT('{}', '%Y-%m-%d'));".format(p, date_to_retrieve, next_date)
         print(sql)
@@ -203,6 +206,9 @@ def get_patients_acc_hr(all_patients, date_to_retrieve):
 
         print(p, date_to_retrieve)
         print('length: ', mycursor.rowcount)
+
+        if(mycursor.rowcount==0):
+            continue
 
         xyz = []
         timestamp = []

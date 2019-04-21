@@ -72,10 +72,10 @@ def get_summarized_data(df_all_p, all_patients):
         df_date['time'] = df_date['timestamp'].apply(lambda x: x.strftime('%H:%M:%S.%f'))
 
         cols = ['ID','date','time','x','y','z','HR','y_pred']
-        df_date = df_date[cols]
+        df_all = df_date[cols]
 
         # # Summarize Data
-        df_summary_all, df_act_period = get_df_summary_all(all_patients, df_date)
+        df_summary_all, df_act_period = get_df_summary_all(all_patients, df_all)
         if(df_summary_all.empty and df_act_period.empty):
                 return df_summary_all, df_act_period
 
@@ -84,8 +84,6 @@ def get_summarized_data(df_all_p, all_patients):
         df_act_period = df_act_period.reset_index(drop=True)
 
         df_summary_all = df_summary_all.reset_index(drop=True)
-        df_summary_all.to_csv('df_summary.csv')
-        df_act_period.to_csv('df_act_period.csv')
 
         # get actual time (from, until)
         actual_from_all = []
