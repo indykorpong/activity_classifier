@@ -31,7 +31,7 @@ create table AllDaySummary(
     CountWalk int,
     CountInactive int,
     CountActive int,
-    CountTotalActiveness int,
+    CountTotal int,
 	CountTransition int,
     DurationPerTransition time,
     primary key(ID, Date, TimeFrom)
