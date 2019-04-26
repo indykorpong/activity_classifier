@@ -1,8 +1,8 @@
 create database if not exists cu_amd;
 use cu_amd;
 
-create table Patient(
-	ID int not null, 
+create table ActivityLog(
+	UserID int not null, 
 	DateAndTime datetime(3) not null,
 	X decimal(6,4), 
 	Y decimal(6,4), 
@@ -10,21 +10,22 @@ create table Patient(
 	HR decimal(7,4),
     ActivityIndex decimal(9,8),
     Label int,
-    primary key(ID, DateAndTime)
+    SummarizedFlag bool,
+    primary key(UserID, DateAndTime)
     );
  
-create table AllDaySummary(
-	ID int not null,
+create table HourlyActivitySummary(
+	UserID int not null,
     Date date not null,
-    TimeFrom time not null,
-    TimeUntil time not null,
-    ActualFrom time,
-    ActualUntil time,
-    DurationSit time,
-    DurationSleep time,
-    DurationStand time,
-    DurationWalk time,
-    TotalDuration time,
+    TimeFrom time(3) not null,
+    TimeUntil time(3) not null,
+    ActualFrom time(3),
+    ActualUntil time(3),
+    DurationSit time(3),
+    DurationSleep time(3),
+    DurationStand time(3),
+    DurationWalk time(3),
+    TotalDuration time(3),
     CountSit int,
     CountSleep int,
     CountStand int,
@@ -32,24 +33,38 @@ create table AllDaySummary(
     CountInactive int,
     CountActive int,
     CountTotal int,
-	CountTransition int,
-    DurationPerTransition time,
-    primary key(ID, Date, TimeFrom)
+	CountActiveToInactive int,
+    DurationPerAction time(3),
+    primary key(UserID, Date, TimeFrom)
     );
        
 create table ActivityPeriod(
-	ID int not null,
+	UserID int not null,
     Date date not null,
-    TimeFrom time not null,
-    TimeUntil time not null,
+    ActualFrom time(3) not null,
+    ActualUntil time(3) not null,
     Label int,
-    primary key(ID, Date, TimeFrom)
+    primary key(UserID, Date, ActualFrom)
 );
 
-create table Logging(
+create table AuditLog(
     StartTime datetime(3) not null,
-    StopTime datetime(3),
+    EndTime datetime(3),
+    UserID int not null,
     ProcessName varchar(255) not null,
+    StartingData datetime(3),
+    EndingData datetime(3),
     ProcessStatus int not null,
-    primary key(StartTime, ProcessName)
+    primary key(StartTime, UserID, ProcessName)
+);
+
+create table UserProfile(
+	UserID int not null,
+    MinX decimal(6,4),
+    MinY decimal(6,4),
+    MinZ decimal(6,4),
+    MaxX decimal(6,4),
+    MaxY decimal(6,4),
+    MaxZ decimal(6,4),
+    primary key(UserID)
 );

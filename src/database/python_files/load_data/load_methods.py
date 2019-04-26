@@ -16,25 +16,14 @@ from os import listdir, walk
 from os.path import isfile, join
 from sklearn.preprocessing import MinMaxScaler
 
-on_server = int(sys.argv[1])
-
-at_home = 'C:'
-
-if(on_server==0):
-    path_to_module = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files/'
-
-elif(on_server==1):
-    path_to_module = '/var/www/html/python/mysql_connect/python_files'
+path_to_module = '/var/www/html/python/mysql_connect/python_files'
 
 sys.path.append(path_to_module)
 os.chdir(path_to_module)
 
 # # Set data path
 
-if(on_server==0):
-    basepath = at_home + '/Users/Indy/Desktop/coding/Dementia_proj/'
-else:
-    basepath = '/var/www/html/python/mysql_connect/'
+basepath = '/var/www/html/python/mysql_connect/'
     
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
@@ -51,10 +40,6 @@ def calc_sec(time):
     sec = round(sec,3)
     return sec
 
-
-# In[5]:
-
-
 def calc_ts(sec):
     ts = ''
     hr = int(sec/3600)
@@ -64,10 +49,6 @@ def calc_ts(sec):
     ts += str(hr) + ':' + str(mn) + ':' + str(sc)
     # print(ts)
     return ts
-
-
-# In[6]:
-
 
 def calc_t_period(dates,secs):
     t_period = []
@@ -95,98 +76,10 @@ def calc_t_period(dates,secs):
 
     return t_period
 
-
-# # Load Dataset
-if(__name__=='__main__'):
-    # Retrieve file directories from path
-    dir_ = [f for f in walk(mypath)]
-    # print(dir_)
-
-    dir = list(dir_[0])
-    dir[1] = sorted(dir[1])
-
-    outer_path = dir[0]
-    sub_path = dir[1]
-
-    folders = [join(outer_path,d) for d in sub_path]
-
-    files = []
-    for fd in folders:
-        temp_f = [f for f in listdir(fd) if isfile(join(fd, f)) and f[-3:]=='csv' and f[5:9]!='data' and f[:4]==fd[-4:]]
-        temp_f = sorted(temp_f)
-
-
-    # ## Retrieve All Timestamp Periods from a File
-
-    # In[47]:
-
-
-    all_subjects = []
-
-    for i in range(1001,1013):
-        all_subjects.append(str(i))
-
-    for i in range(2001,2003):
-        all_subjects.append(str(i))
-
-# print(all_subjects)
-
-
-# In[48]:
-
-
-def fix_thai_language():
-    # -- coding: utf-8 --
-
-    filepath = '/Users/admin/Downloads/history_amdtimer.csv'
-
-    df = pd.read_csv(filepath, header=None, names=['sid','raw_label', 'timestamp', 'duration','label'])
-
-    temp_series = []
-
-    for i in range(len(df)):
-
-        if(df.iloc[i][1]=='ยืน'):
-            temp_series.append('stand')
-
-        elif(df.iloc[i][1]=='นั่ง'):
-            temp_series.append('sit')
-
-        elif(df.iloc[i][1]=='นอน'):
-            temp_series.append('sleep')
-
-        elif(df.iloc[i][1]=='เดิน'):
-            temp_series.append('walk')
-
-        elif(df.iloc[i][1]=='ขึ้นบันได'):
-            temp_series.append('walk')
-
-        elif(df.iloc[i][1]=='ลงบันได'):
-            temp_series.append('walk')
-
-        else:
-            temp_series.append(df.loc[i]['raw_label'])
-
-    df['label'] = pd.Series(temp_series)
-    df['raw_label'] = df['label']
-    df = df.drop(columns=['label'])
-
-#     print(df)
-    df.to_csv('iphone-history_amdtimer.csv', sep=',')
-
-
-# In[49]:
-
-
 def identify_subj_id(i, all_subjects):
     subject_id = all_subjects[i]
 
-
     return subject_id
-
-
-# In[107]:
-
 
 def load_timer(subject_id):
   # Configure starting and ending time values
@@ -229,9 +122,6 @@ def load_timer(subject_id):
 
 # ## Create Dataframe of ACC and HR
 
-# In[51]:
-
-
 def load_acc(subject_id, rec_date, start_time, end_time):
     # Load accelerations
     acc_filepath = mypath + '/' + subject_id + '/' + subject_id + '-log_acc.csv'
@@ -251,10 +141,6 @@ def load_acc(subject_id, rec_date, start_time, end_time):
 
     return df_filt
 
-
-# In[52]:
-
-
 def load_hr(subject_id, rec_date, start_time, end_time):
     # Load heart rate
     hr_filepath = mypath + '/' + subject_id + '/' + subject_id + '-log_hr.csv'
@@ -271,10 +157,6 @@ def load_hr(subject_id, rec_date, start_time, end_time):
     df_hr = df_hr[cols]
 
     return df_hr
-
-
-# In[53]:
-
 
 def merge_acc_and_hr(df_filt, df_hr):
     # Fill in missing HRs
@@ -294,7 +176,7 @@ def merge_acc_and_hr(df_filt, df_hr):
         df_filt['HR'] = pd.Series([None for i in range(df_filt.shape[0])])
 
     if(not df_filt.empty):
-        # Normalize by dividing by g (standard gravity)
+        # Divide by g (standard gravity) and normalize by min-max scaling
         getcontext().prec = 4
         g = Decimal(9.8)
         df_filt.loc[:,'x'] = df_filt['x'].apply(lambda x: x/g)
@@ -304,26 +186,16 @@ def merge_acc_and_hr(df_filt, df_hr):
         cols = ['x','y','z']
         xyz_ = df_filt[cols].to_dict('split')['data']
         xyz_new = MinMaxScaler().fit_transform(xyz_)
-    #     print(np.array(xyz_new).shape)
 
         for i in range(len(cols)):
             df_filt[cols[i]] = pd.Series(xyz_new.transpose()[i])
-
-    #     print(df_filt['x'])
 
     return df_filt
 
 # # Calculate Activity Index
 
-# In[54]:
-
-
 std_i_bar = [0.00349329,0.00465817,0.00543154]
 std_i_bar = np.array(std_i_bar)
-
-
-# In[55]:
-
 
 def equation_bai(X_i):
     all_std = []
@@ -344,10 +216,6 @@ def equation_bai(X_i):
 
     return ai
 
-
-# In[56]:
-
-
 def calc_ai(df1):
     H = 10
     ai1 = []
@@ -363,12 +231,6 @@ def calc_ai(df1):
             ai1.append(1)
 
     return ai1
-
-
-# # Colors for Each Acitivity
-
-# In[77]:
-
 
 def prepare_time_periods(timer_filt):
     t_ = [calc_sec(t.split(' ')[1]) for t in timer_filt['timestamp']]
@@ -388,10 +250,6 @@ def prepare_time_periods(timer_filt):
             labels.append('NaN')
 
     return ts_, labels
-
-
-# In[58]:
-
 
 def prepare_color_labels(ts_, labels):
 
@@ -428,8 +286,6 @@ def prepare_color_labels(ts_, labels):
     for i in range(len(lb)):
         color_dict[lb[i]] = colors[i]
 
-    #   print(color_dict)
-
     lb_color = []
     for x in labels:
         lb_color.append(color_dict[x])
@@ -438,9 +294,6 @@ def prepare_color_labels(ts_, labels):
 
 
 # ## Plot ACC, AI with Colors
-
-# In[59]:
-
 
 def plot_ai(df1, ts, lb_color):
     dict1 = df1.to_dict(orient='list')
@@ -476,16 +329,10 @@ def plot_ai(df1, ts, lb_color):
 
     ax.set_title('Activity Index')
 
-    fig.savefig(basepath + 'Graphs/' + subject_id + '/' + subject_id + '_ddc_run.png', dpi = 300)
-
     #   plt.show()
     plt.close(fig)
 
-
 # # Create Dataframe with AI
-
-# In[60]:
-
 
 def ai(subject_id, rec_date, start_time, end_time, df_timer):
     df_filt = load_acc(subject_id, rec_date, start_time, end_time)
@@ -506,18 +353,6 @@ def ai(subject_id, rec_date, start_time, end_time, df_timer):
 
 
 # # Separate Data by Labels of Activity
-
-# In[61]:
-
-
-class period:
-    def __init__(self, s, f):
-        self.s = s
-        self.f = f
-
-
-# In[113]:
-
 
 def separate_label(df1, df_timer, df_list, labels):
 
@@ -544,12 +379,6 @@ def separate_label(df1, df_timer, df_list, labels):
             df1_new = df1[df1['timestamp'].isin(filter_)]
             df1_new = df1_new.reset_index(drop=True)
 
-#             xyz_ = df1_new[cols].to_dict('split')['data']
-#             xyz_new = MinMaxScaler().fit_transform(xyz_)
-
-#             for i in range(len(cols)):
-#                 df1_new[cols[i]] = pd.Series(xyz_new.transpose()[i])
-
             for i in range(len(labels)):
                 if(labels[i]==x[0]):
                     df_list[i] = df_list[i].append(df1_new, sort=False)
@@ -558,9 +387,6 @@ def separate_label(df1, df_timer, df_list, labels):
 
 
 # # Dataframe List Grouped by Label
-
-# In[110]:
-
 
 def group_dataframe(df1, df_timer):
     df_list = []
@@ -591,15 +417,10 @@ def group_dataframe(df1, df_timer):
     for i in range(len(df_list)):
         df_list[i] = df_list[i].reset_index(drop=True)
 
-#     print(len(df_list[3]))
-
     return df_list, label_dict
 
 
 # ## Show Plots of Grouped Dataframe
-
-# In[64]:
-
 
 def plot_grouped_df(df_list, label_dict):
     xyz = ['x','y','z']
@@ -623,11 +444,8 @@ def plot_grouped_df(df_list, label_dict):
 
             cnt += 1
 
-        figure.savefig(basepath + 'Graphs/ddc_' + x + '/' + subject_id + '.png', dpi=300)
-
     #     plt.show()
 
-    # close the figure
     plt.close(figure)
 
 
@@ -654,11 +472,6 @@ def get_data(df_list, label_dict):
         ts_ = np.array(df_list[label_dict[x]]['timestamp'])
         hr_ = np.array(df_list[label_dict[x]]['HR'])
 
-          # 'downstairs': 0,
-          # 'sit': 1,
-          # 'sleep': 2,
-          # 'stand': 3,
-
         y_all.append(y_)
         ts_all.append(ts_)
         hr_all.append(hr_)
@@ -675,10 +488,6 @@ def get_data(df_list, label_dict):
     hr_all = np.hstack(hr_all)
 
     return np.array(X_all), np.array(y_all), np.array(ts_all), np.array(hr_all)
-
-
-# In[ ]:
-
 
 def get_sorted_data(X_i, y_i, ts_i, hr_i, subj_i):
     df_ = pd.DataFrame({
@@ -705,9 +514,6 @@ def get_sorted_data(X_i, y_i, ts_i, hr_i, subj_i):
 
 # # Function Call *
 
-# In[115]:
-
-
 def load_all_data(all_subjects):
     itr = len(all_subjects)
 
@@ -728,14 +534,9 @@ def load_all_data(all_subjects):
         df_timer, rec_date, start_time, end_time = load_timer(subject_id)
         df1, ai1, ts, lb_color = ai(subject_id, rec_date, start_time, end_time, df_timer)
 
-#         print(start_time, end_time)
-
         # get a list of dataframe in which there are 4 types of activity
         df_list, label_dict = group_dataframe(df1, df_timer)
         label_list = sorted(list(label_dict.keys()))
-
-    #     plot_grouped_df(df_list, label_dict)
-    #     plot_ai(df1, ts, lb_color)
 
         X_i, y_i, ts_i, hr_i = get_data(df_list, label_dict)
         subj_i = [subject_id for i in range(len(X_i))]

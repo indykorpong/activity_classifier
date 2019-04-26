@@ -1,7 +1,8 @@
 use cu_amd;
 
-delete from ActivityPeriod;
-delete from AllDaySummary;
-delete from Patient;
+delete from cu_amd.ActivityPeriod;
+delete from cu_amd.AllDaySummary;
 
-delete from acc_log_2;
+-- delete from Patient;
+
+-- delete from acc_log_2;
