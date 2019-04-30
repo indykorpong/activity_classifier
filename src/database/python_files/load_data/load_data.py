@@ -3,9 +3,6 @@
 
 # # Import Libraries
 
-# In[1]:
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,42 +14,54 @@ import csv
 from os import listdir, walk
 from os.path import isfile, join
 
-from sklearn.preprocessing import MinMaxScaler
+from decimal import Decimal, getcontext
 
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+# from sklearn.preprocessing import MinMaxScaler
 
-sys.path.append(path_to_module)
-os.chdir(path_to_module)
+# path_to_module = '/var/www/html/python/mysql_connect/python_files'
 
-# # Set data path
+# sys.path.append(path_to_module)
+# os.chdir(path_to_module)
 
-basepath = '/var/www/html/python/mysql_connect/'
+# # # Set data path
+
+# basepath = '/var/www/html/python/mysql_connect/'
     
-datapath = basepath + 'DDC_Data/'
-mypath = basepath + 'DDC_Data/raw/'
+# datapath = basepath + 'DDC_Data/'
+# mypath = basepath + 'DDC_Data/raw/'
 
 from load_data.load_methods import merge_acc_and_hr
-from insert_db.insert_db import get_patients_acc_hr
+from insert_db.insert_db import get_patients_acc_hr, get_user_profile
 
+def min_max_scale(user_id, df_xyz):
+    df_new = df_xyz.copy()
+
+    [min_x, min_y, min_z, max_x, max_y, max_z] = get_user_profile(user_id)[0]
+
+    getcontext().prec = 8
+    df_new['x'] = df_new['x'].apply(lambda x: (Decimal(x)-min_x)/(max_x-min_x))
+    df_new['y'] = df_new['y'].apply(lambda x: (Decimal(x)-min_y)/(max_y-min_y))
+    df_new['z'] = df_new['z'].apply(lambda x: (Decimal(x)-min_z)/(max_z-min_z))
+
+    return df_new
 
 def load_raw_data(user_id):
 
     df_acc, df_hr = get_patients_acc_hr(user_id)
-    print(df_acc.head())
-    print(df_hr.head())
 
     df1 = merge_acc_and_hr(df_acc, df_hr)
 
     if(not df1.empty):
         cols = ['x','y','z']
-        xyz_ = df1[cols].to_dict('split')['data']
-        xyz_new = MinMaxScaler().fit_transform(xyz_)
+
+        df_new = min_max_scale(user_id, df1[cols])
 
         for i in range(len(cols)):
-            df1[cols[i]] = pd.Series(xyz_new.transpose()[i])
+            df1[cols[i]] = df_new[cols[i]]
 
-        print('Finished Loading')
+        print('Finished loading data')
 
         df1 = df1.reset_index(drop=True)
+        print(df1.head())
 
     return df1

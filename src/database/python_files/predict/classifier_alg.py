@@ -10,30 +10,11 @@ import math
 import sys
 import os
 
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
-
-sys.path.append(path_to_module)
-os.chdir(path_to_module)
-
-# # Set data path
-
-basepath = '/var/www/html/python/mysql_connect/'
-    
-datapath = basepath + 'DDC_Data/'
-mypath = basepath + 'DDC_Data/raw/'
-
-# In[1]:
-
-from tqdm import tqdm
 from predict.detect_peaks import detect_peaks
-
 
 # ## Classify walk
 
-def classify_walk(xyz_pca):
-
-    window_length = 60   # 3 sec/0.16 sec = 18.75 time point
-    one_sec = 6     # 1 sec/0.16 sec = 6.25 time point
+def classify_walk(xyz, walk_label=3):
 
     cols = [0,1,2]
     threshold = [0.05, 0.035, 0.04]
@@ -44,18 +25,18 @@ def classify_walk(xyz_pca):
 
     walk_pred = [[],[],[]]
 
-    for k in range(len(xyz_pca)):
+    for k in range(len(xyz)):
         
         for cl in range(len(cols)):
             c = cols[cl]
 
-            xyz_pca_k_c = np.transpose(xyz_pca[k])[c]
+            xyz_k_c = np.transpose(xyz[k])[c]
 
-            peak_idx = detect_peaks(xyz_pca_k_c)    
-            valley_idx = detect_peaks(xyz_pca_k_c, valley=True)
+            peak_idx = detect_peaks(xyz_k_c)    
+            valley_idx = detect_peaks(xyz_k_c, valley=True)
 
-            peak_point = [xyz_pca_k_c[j] for j in peak_idx]    
-            valley_point = [xyz_pca_k_c[j] for j in valley_idx]
+            peak_point = [xyz_k_c[j] for j in peak_idx]    
+            valley_point = [xyz_k_c[j] for j in valley_idx]
 
             min_length = min(len(peak_idx), len(valley_idx))
 
@@ -72,8 +53,6 @@ def classify_walk(xyz_pca):
     
     walk_pred_ax = np.array(walk_pred)
     walk_pred_t = walk_pred_ax.transpose()
-    
-#     print(walk_pred_ax)
 
     walk_pred = []
 
@@ -89,15 +68,13 @@ def classify_walk(xyz_pca):
         
     return walk_pred
 
-def combine(xyz_, y_pred_svm, WALK_LABEL = 3):
-    y_pred_walk = classify_walk(xyz_)
-    
+def combine(xyz, y_pred_svm, walk_label = 3):
+    y_pred_walk = classify_walk(xyz)
     y_pred_new = []
 
     for i in range(len(y_pred_walk)):
-        if(y_pred_svm[i]!=WALK_LABEL and y_pred_walk[i]==WALK_LABEL):
+        if(y_pred_svm[i]!=walk_label and y_pred_walk[i]==walk_label):
             y_pred_new.append(y_pred_walk[i])
-
         else:
             y_pred_new.append(y_pred_svm[i])
          
