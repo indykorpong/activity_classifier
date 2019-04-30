@@ -1,7 +1,5 @@
 # # Import Libraries
 
-# In[1]:
-
 import pickle
 import ruptures as rpt
 import numpy as np
@@ -12,27 +10,22 @@ import os
 from queue import Queue
 from datetime import date, datetime, timedelta
 
-from load_data.load_methods import calc_sec, calc_ts
+# path_to_module = '/var/www/html/python/mysql_connect/python_files'
 
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+# sys.path.append(path_to_module)
+# os.chdir(path_to_module)
 
-sys.path.append(path_to_module)
-os.chdir(path_to_module)
+# # # Set data path
 
-# # Set data path
-
-basepath = '/var/www/html/python/mysql_connect/'
+# basepath = '/var/www/html/python/mysql_connect/'
     
-datapath = basepath + 'DDC_Data/'
-mypath = basepath + 'DDC_Data/raw/'
-
-label_list = ['sit', 'sleep', 'stand', 'walk']
-label_dict = {'sit': 0, 'sleep': 1, 'stand': 2, 'walk': 3}
+# datapath = basepath + 'DDC_Data/'
+# mypath = basepath + 'DDC_Data/raw/'
 
 date_format = '%Y-%m-%d'
 time_format = '%H:%M:%S.%f'
+datetime_format = '{} {}'.format(date_format, time_format)
 
-onehour = 60*60
 n_hours = 24    # hours in 1 day
 
 midnight = datetime.strptime('00:00:00.000', time_format)
@@ -75,14 +68,8 @@ def separate_hourly(df_cont_list):
     while(not q.empty()):
         df_segment = q.get()
 
-        print('df segment')
-        print(df_segment)
-        print('========')
-
         start_time_of_segment = df_segment.iloc[0, time_col_idx]
         end_time_of_segment = df_segment.iloc[len(df_segment)-1, time_col_idx]
-        print(start_time_of_segment)
-        print(midnight + timedelta(hours=1))
 
         for h in range(n_hours):
             base_time = midnight + timedelta(hours=h)
@@ -105,10 +92,7 @@ def separate_hourly(df_cont_list):
                 else:
                     df_sep_list.append(df_seg_1[cols])
 
-                print(df_seg_1.shape[0], df_segment.shape[0])
-
                 if(df_seg_1.shape[0]!=0 and df_seg_1.shape[0]<df_segment.shape[0]):
-                    print('???')
                     df_seg_2 = pd.DataFrame()
                     for j in range(keep_idx, df_segment.shape[0]):
                         df_seg_2 = df_seg_2.append(df_segment.iloc[j])
@@ -139,7 +123,6 @@ def get_act_period(df_sep_list):
             df_act_period_i = df_act_period_i.append(df_temp)
 
     if(not df_act_period_i.empty):
-        print(df_act_period_i.columns)
         df_act_period_i = df_act_period_i.sort_values(by=['Date','ActualFrom'], axis=0)
         df_act_period_i = df_act_period_i.reset_index(drop=True)
 
@@ -149,7 +132,6 @@ def get_act_period(df_sep_list):
 
 def get_df_summary(df_act_period):
     df_summary_all = pd.DataFrame()
-    print('df act period shape', df_act_period.shape)
     
     grouped = df_act_period.groupby(by='Date')
 
@@ -157,9 +139,6 @@ def get_df_summary(df_act_period):
         date_group = x[0]
         df_act_period_i = grouped.get_group(date_group)
         df_act_period_i = df_act_period_i.reset_index(drop=True)
-
-        print(date_group)
-        print(df_act_period_i)
 
         df_summary = pd.DataFrame()
 
@@ -199,7 +178,6 @@ def get_df_summary(df_act_period):
             end_time = midnight + timedelta(hours=h+1)
 
             tick = 0
-            print(end_time)
             for i in range(df_act_period_i.shape[0]):
 
                 if(base_time<=df_act_period_i.loc[i, 'ActualFrom'] and 
@@ -208,14 +186,12 @@ def get_df_summary(df_act_period):
                         if(df_summary.loc[j, 'TimeFrom']==base_time):
                             df_summary.loc[j, 'ActualFrom'] = df_act_period_i.loc[i, 'ActualFrom']
                             tick = 1
-                            print('ticked')
                             
                 if(base_time<=df_act_period_i.loc[i, 'ActualFrom'] and 
                     end_time>=df_act_period_i.loc[i, 'ActualUntil'] and tick==1):
                     for j in range(df_summary.shape[0]):
                         if(df_summary.loc[j, 'TimeUntil']==end_time):
                             df_summary.loc[j, 'ActualUntil'] = df_act_period_i.loc[i, 'ActualUntil']
-                            print('changed')
 
                 elif(end_time<df_act_period_i.loc[i, 'ActualUntil'] and tick==1):
                     break
@@ -229,7 +205,6 @@ def get_df_summary(df_act_period):
                     act_duration_list[df_act_period_i.loc[i, 'Label']] += \
                         df_act_period_i.loc[i, 'ActualUntil'] - df_act_period_i.loc[i, 'ActualFrom']
                     act_count_list[df_act_period_i.loc[i, 'Label']] += 1
-                    print('counted')
 
                 transition_found = 0
                 if(i>0 and (df_act_period_i.loc[i, 'Label']==0 or df_act_period_i.loc[i, 'Label']==1) and 
@@ -277,16 +252,12 @@ def get_df_summary(df_act_period):
         
             df_summary = df_summary.reindex(columns=cols)
 
-            print(df_summary)
-            print('|||||||||')
 
         df_summary_all = df_summary_all.append(df_summary)
 
     return df_summary_all
 
 def get_summary(df_all):
-    print('df all')
-    print(df_all.tail(5))
 
     df_act_period = pd.DataFrame()
 
@@ -296,25 +267,15 @@ def get_summary(df_all):
     cols = ['UserID','date','time','x','y','z','HR','y_pred']
     df_all = df_all[cols]
 
-    print(df_all.dtypes)
-    print(df_all.head(10))
-
     df_cont_list = get_df_continuous_list(df_all)
-    print(df_cont_list)
 
     df_sep_list = separate_hourly(df_cont_list)
-    print(df_sep_list)
 
     df_act_period_i = get_act_period(df_sep_list)
     df_act_period = df_act_period.append(df_act_period_i)
-    print('::::::::')
-    print(df_act_period_i)
     
     cols = ['UserID', 'Date', 'ActualFrom', 'ActualUntil', 'Label']
     df_act_period = df_act_period.reindex(columns=cols)
-
-    print(',,,,,,,,,')
-    print(df_act_period)
 
     df_summary = get_df_summary(df_act_period)
 

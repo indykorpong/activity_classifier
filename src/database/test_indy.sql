@@ -4,11 +4,11 @@ use cu_amd;
 create table ActivityLog(
 	UserID int not null, 
 	DateAndTime datetime(3) not null,
-	X decimal(6,4), 
-	Y decimal(6,4), 
-	Z decimal(6,4), 
-	HR decimal(7,4),
-    ActivityIndex decimal(9,8),
+	X decimal(20,8), 
+	Y decimal(20,8), 
+	Z decimal(20,8), 
+	HR decimal(11,8),
+    ActivityIndex decimal(11,8),
     Label int,
     SummarizedFlag bool,
     primary key(UserID, DateAndTime)
@@ -60,11 +60,11 @@ create table AuditLog(
 
 create table UserProfile(
 	UserID int not null,
-    MinX decimal(6,4),
-    MinY decimal(6,4),
-    MinZ decimal(6,4),
-    MaxX decimal(6,4),
-    MaxY decimal(6,4),
-    MaxZ decimal(6,4),
+    MinX decimal(10,8),
+    MinY decimal(10,8),
+    MinZ decimal(10,8),
+    MaxX decimal(10,8),
+    MaxY decimal(10,8),
+    MaxZ decimal(10,8),
     primary key(UserID)
 );

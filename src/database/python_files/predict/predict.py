@@ -3,9 +3,6 @@
 
 # # Import Libraries
 
-# In[8]:
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,14 +11,15 @@ import math
 import pickle
 import sys
 
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+# path_to_module = '/var/www/html/python/mysql_connect/python_files'
 
-sys.path.append(path_to_module)
-os.chdir(path_to_module)
+# sys.path.append(path_to_module)
+# os.chdir(path_to_module)
 
 # # Set data path
 
 basepath = '/var/www/html/python/mysql_connect/'
+# basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
     
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
@@ -34,11 +32,6 @@ from os.path import isfile, join
 from load_data.load_methods import calc_ai
 from preprocess.preprocessing import prepare_impure_label
 from predict.classifier_alg import combine
-# In[1]:
-
-
-from tqdm import tqdm
-
 
 def predict_label(df_all_p_sorted):
 
@@ -65,17 +58,18 @@ def predict_label(df_all_p_sorted):
         
         if(X_all_p.shape[0]>=window_length):
             y_pred = model.predict(X_impure)
+
             y_pred_fill = np.hstack(([y_pred[0] for i in range(window_length-1)], y_pred))
 
         else:
             y_pred_fill = np.array([0 for i in range(X_all_p.shape[0])])
 
-        y_pred_all.append(y_pred_fill)
-        
-        
+        y_pred_walk = np.array(combine(X_all_p, y_pred_fill))
 
+        y_pred_all.append(y_pred_walk)
+        
     y_pred_all = np.hstack(y_pred_all)
-    # y_pred_walk = np.array(combine(X_all, y_pred_all))
+    
     print('y pred all shape, df all p sorted shape')
     print(y_pred_all.shape)
     print(df_all_p_sorted.shape)
@@ -83,7 +77,6 @@ def predict_label(df_all_p_sorted):
     cols = list(df_all_p_sorted.columns.values)
 
     for i in range(df_all_p_sorted.shape[0]):
-        # df_all_p_sorted.loc[i, 'y_pred'] = y_pred_walk[i]
         df_all_p_sorted.loc[i, 'y_pred'] = y_pred_all[i]
 
     df_all_p_sorted['y_pred'] = df_all_p_sorted['y_pred'].astype(int)
