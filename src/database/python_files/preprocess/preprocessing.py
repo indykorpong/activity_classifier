@@ -18,7 +18,7 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn.neighbors import NearestNeighbors, KDTree
 from sklearn import neighbors
 
-# # Support Vector Classifier
+## Support Vector Classifier
 
 def svm_classifier(X, y):
     clf = SVC(kernel='rbf', decision_function_shape='ovr', gamma='auto')
@@ -26,7 +26,7 @@ def svm_classifier(X, y):
 
     return clf
 
-# # K-Nearest Neighbors Classifier
+## K-Nearest Neighbors Classifier
 
 def nn_classifier(X, y, k=6):
 #   print(y.shape)
@@ -37,7 +37,7 @@ def nn_classifier(X, y, k=6):
     return clf
 
 
-# # Make Overlapping Time Window
+## Make Overlapping Time Window
 
 def make_overlapping(X, y, window_length = 60):
     length = X.shape[0]
@@ -57,7 +57,7 @@ def make_overlapping(X, y, window_length = 60):
     return np.array(X_new), np.array(y_new)
 
 
-# # Concatenate X,Y,Z Axis into 1-D Numpy Array
+## Concatenate X,Y,Z Axis into 1-D Numpy Array
 
 def concat_xyz(X):
     X_concat = []
@@ -68,7 +68,7 @@ def concat_xyz(X):
 
     return np.array(X_concat)
 
-# # Reshape Data (Impure Label)
+## Reshape Data (Impure Label)
 
 def prepare_impure_label(X, y, window_length=60):
     if(X.shape[0]<window_length):

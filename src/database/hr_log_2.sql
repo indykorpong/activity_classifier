@@ -10,6 +10,12 @@ create table hr_log_2(
 
 insert into hr_log_2(user_id, event_timestamp, HR) select distinct user_id, event_timestamp, HR from cu_amd.hr_log;
 
+insert into hr_log_2 (event_timestamp, HR, user_id)
+select distinct event_timestamp, hr, user_id from hr_log
+where event_timestamp > 
+(SELECT max(event_timestamp) as max_timestamp 
+FROM hr_log_2);
+
 select * from cu_amd.hr_log_2 where loaded_flag is null;
 
 SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));

@@ -19,7 +19,6 @@ import sys
 # # Set data path
 
 basepath = '/var/www/html/python/mysql_connect/'
-# basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
     
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
@@ -32,6 +31,8 @@ from os.path import isfile, join
 from load_data.load_methods import calc_ai
 from preprocess.preprocessing import prepare_impure_label
 from predict.classifier_alg import combine
+
+## Predict label using a trained k-nearest neighbor model
 
 def predict_label(df_all_p_sorted):
 
