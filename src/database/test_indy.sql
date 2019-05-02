@@ -48,18 +48,20 @@ create table ActivityPeriod(
 );
 
 create table AuditLog(
-    StartTime datetime(3) not null,
-    EndTime datetime(3),
+    StartProcessTime datetime(3) not null,
+    EndProcessTime datetime(3),
     UserID int not null,
     ProcessName varchar(255) not null,
-    StartingData datetime(3),
-    EndingData datetime(3),
+    StartData datetime(3),
+    EndData datetime(3),
     ProcessStatus int not null,
-    primary key(StartTime, UserID, ProcessName)
+    primary key(StartProcessTime, UserID, ProcessName)
 );
 
 create table UserProfile(
 	UserID int not null,
+    InitialUpdate datetime(3) not null,
+    LatestUpdate datetime(3) not null,
     MinX decimal(10,8),
     MinY decimal(10,8),
     MinZ decimal(10,8),

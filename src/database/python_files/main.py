@@ -182,16 +182,15 @@ def main_function():
     get_all_day_result(all_patients)
 
 if(__name__=='__main__'):
-    schedule_time = "00:00"
+    # schedule_time = "00:00"
 
-    # Schedule the program to run main function every XXXX
-    schedule.every().minute.do(main_function)
-    
-    # schedule.every().day.at(schedule_time).do(main_function)
+    # # Schedule the program to run main function every XXXX
+    # schedule.every().minute.do(main_function)
+    # # schedule.every().day.at(schedule_time).do(main_function)
 
-    while 1:
-        schedule.run_pending()
-        time.sleep(1)
-        print('waiting')
+    # while 1:
+    #     schedule.run_pending()
+    #     time.sleep(1)
+    #     print('waiting')
 
-    # main_function()
+    main_function()
