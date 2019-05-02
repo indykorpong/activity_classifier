@@ -94,11 +94,11 @@ def insert_db_status(start_time, end_time, user_id, process_name, starting_data,
 
     datetime_format = '%Y-%m-%d %H:%i:%S.%f'
 
-    insert_sql = "INSERT INTO cu_amd.AuditLog (StartTime, EndTime, UserID, ProcessName, ProcessStatus) VALUES (DATE_FORMAT(%s, %s), %s, %s, %s, %s)"
-    update_sql = "UPDATE cu_amd.AuditLog SET ProcessStatus = %s WHERE StartTime = %s AND ProcessName = %s"
-    stoptime_sql = "UPDATE cu_amd.AuditLog SET EndTime = %s WHERE StartTime = %s AND ProcessName = %s"
-    start_data_sql = "UPDATE cu_amd.AuditLog SET StartingData=DATE_FORMAT(%s, %s) WHERE UserID=%s AND StartTime=%s AND ProcessName=%s;"
-    end_data_sql = "UPDATE cu_amd.AuditLog SET EndingData=DATE_FORMAT(%s, %s) WHERE UserID=%s AND StartTime=%s AND ProcessName=%s;"
+    insert_sql = "INSERT INTO cu_amd.AuditLog (StartProcessTime, EndProcessTime, UserID, ProcessName, ProcessStatus) VALUES (DATE_FORMAT(%s, %s), %s, %s, %s, %s)"
+    update_sql = "UPDATE cu_amd.AuditLog SET ProcessStatus = %s WHERE StartProcessTime = %s AND ProcessName = %s"
+    stoptime_sql = "UPDATE cu_amd.AuditLog SET EndProcessTime = %s WHERE StartProcessTime = %s AND ProcessName = %s"
+    start_data_sql = "UPDATE cu_amd.AuditLog SET StartData=DATE_FORMAT(%s, %s) WHERE UserID=%s AND StartProcessTime=%s AND ProcessName=%s;"
+    end_data_sql = "UPDATE cu_amd.AuditLog SET EndData=DATE_FORMAT(%s, %s) WHERE UserID=%s AND StartProcessTime=%s AND ProcessName=%s;"
     
     error = False
 
@@ -219,31 +219,75 @@ def insert_db_hourly_summary(df_summary_all):
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, \
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
 
-    sql2 = "UPDATE cu_amd.HourlyActivitySummary \
-        SET \
-            ActualFrom=%s, \
-            ActualUntil=%s, \
-            DurationSit=%s, \
-            DurationSleep=%s, \
-            DurationStand=%s, \
-            DurationWalk=%s, \
-            TotalDuration=%s, \
-            CountSit=%s, \
-            CountSleep=%s, \
-            CountStand=%s, \
-            CountWalk=%s, \
-            CountInactive=%s, \
-            CountActive=%s, \
-            CountTotal=%s, \
-            CountActiveToInactive=%s, \
-            DurationPerAction=%s \
-        WHERE UserID=%s AND Date=%s \
-        AND TimeFrom=%s \
-        AND TimeUntil=%s \
-        AND ActualFrom=%s \
-        AND ActualUntil=%s;"
-
-    zero_sec = '00:00:00.000'
+    sql2 = "SET @NewActualFrom := time(%s); \
+            SET @OldActualFrom := (select ActualFrom from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewActualUntil := time(%s); \
+            SET @OldActualUntil := (select ActualUntil from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewDurationSit := time(%s); \
+            SET @OldDurationSit := (select DurationSit from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewDurationSleep := time(%s); \
+            SET @OldDurationSleep := (select DurationSleep from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewDurationStand := time(%s); \
+            SET @OldDurationStand := (select DurationStand from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewDurationWalk := time(%s); \
+            SET @OldDurationWalk := (select DurationWalk from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewTotalDuration := time(%s); \
+            SET @OldTotalDuration := (select TotalDuration from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewCountSit = %s; \
+            SET @OldCountSit = (select CountSit from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewCountSleep = %s; \
+            SET @OldCountSleep = (select CountSleep from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewCountStand = %s; \
+            SET @OldCountStand = (select CountStand from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewCountWalk = %s;   \
+            SET @OldCountWalk = (select CountWalk from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewCountInactive = %s; \
+            SET @OldCountInactive = (select CountInactive from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewCountActive = %s;  \
+            SET @OldCountActive = (select CountActive from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewCountTotal = %s;  \
+            SET @OldCountTotal = (select CountTotal from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s);  \
+            \
+            SET @NewCountActToInact = %s;  \
+            SET @OldCountActToInact = (select CountActiveToInactive from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            SET @NewDurationPAction = %s;  \
+            SET @OldDurationPAction = (select DurationPerAction from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
+            \
+            UPDATE cu_amd.HourlyActivitySummary  \
+            SET  \
+                ActualFrom=IF(@OldActualFrom='00:00:00.000', @NewActualFrom, @OldActualFrom),  \
+                ActualUntil=IF(@OldActualUntil<@NewActualUntil, @NewActualUntil, @OldActualUntil),  \
+                DurationSit=ADDTIME(@OldDurationSit, @NewDurationSit),  \
+                DurationSleep=ADDTIME(@OldDurationSleep, @NewDurationSleep),  \
+                DurationStand=ADDTIME(@OldDurationStand, @NewDurationStand),  \
+                DurationWalk=ADDTIME(@OldDurationWalk, @NewDurationWalk),  \
+                TotalDuration=ADDTIME(@OldTotalDuration, @NewTotalDuration), \
+                CountSit=@OldCountSit + @NewCountSit,  \
+                CountSleep=@OldCountSleep + @NewCountSleep,  \
+                CountStand=@OldCountStand + @NewCountStand,  \
+                CountWalk=@OldCountWalk + @NewCountWalk,  \
+                CountInactive=@OldCountInactive + @NewCountInactive,  \
+                CountActive=@OldCountActive + @NewCountActive,  \
+                CountTotal=@OldCountTotal + @NewCountTotal,  \
+                CountActiveToInactive=@OldCountActToInact + @NewCountActToInact,  \
+                DurationPerAction=ADDTIME(@OldDurationPAction, @NewDurationPAction)  \
+                WHERE UserID=%s AND Date=%s \
+            AND TimeFrom=%s \
+            AND TimeUntil=%s;"
 
     values = zip(df_summary_all['UserID'], df_summary_all['Date'], \
         df_summary_all['TimeFrom'], df_summary_all['TimeUntil'], df_summary_all['ActualFrom'], df_summary_all['ActualUntil'], \
@@ -260,18 +304,26 @@ def insert_db_hourly_summary(df_summary_all):
         except IntegrityError:
             print('update hourly summary')
 
-            z2 = [z[i] for i in range(4, 11)]
-            z3 = [int(z[i]) for i in range(11, 19)]
-            z4 = [z[19]]
-            z5 = [int(z[0])]
-            z6 = [z[i] for i in range(1,4)]
-            z7 = [zero_sec, zero_sec]
-            z_all = [z2, z3, z4, z5, z6, z7]
-            z_all_flat = [item for z_i in z_all for item in z_i]
-            z_tuple = tuple(z_all_flat)
+            u_id = z[0]; dat = z[1]; t_from = z[2]; t_until = z[3]; a_from = z[4]; a_until = z[5]; du_sit = z[6]; du_sleep = z[7];
+            du_stand = z[8]; du_walk = z[9]; du_total = z[10]; c_sit = z[11]; c_sleep = z[12]; c_stand = z[13]; c_walk = z[14]; 
+            c_inact = z[15]; c_act = z[16]; c_total = z[17]; c_acttoinact = z[18]; 
+            du_peract = z[19]
+
+            z_tuple = [a_from, t_from, u_id, dat, a_until, t_from, u_id, dat, du_sit, t_from, u_id, dat, 
+            du_sleep, t_from, u_id, dat, du_stand, t_from, u_id, dat, du_walk, t_from, u_id, dat, 
+            du_total, t_from, u_id, dat, c_sit, t_from, u_id, dat, c_sleep, t_from, u_id, dat, 
+            c_stand, t_from, u_id, dat, c_walk, t_from, u_id, dat, c_inact, t_from, u_id, dat, 
+            c_act, t_from, u_id, dat, c_total, t_from, u_id, dat, c_acttoinact, t_from, u_id, dat,
+            du_peract, t_from, u_id, dat, u_id, dat, t_from, t_until]
 
             print(z_tuple)
-            mycursor.execute(sql2, z_tuple)
+            results = mycursor.execute(sql2, z_tuple, multi=True)
+            print(results)
+            for cur in results:
+                print('cursor:', cur)
+                if cur.with_rows:
+                    print(1)
+                    # print('result:', cur.fetchall())
     
         mydb.commit()
 
