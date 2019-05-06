@@ -72,7 +72,7 @@ def concat_xyz(X):
 
 def prepare_impure_label(X, y, window_length=60):
     if(X.shape[0]<window_length):
-        return X, y
+        return [], []
 
     X_ol, y_ol = make_overlapping(X, y)
     X_concat_ol = concat_xyz(X_ol)
