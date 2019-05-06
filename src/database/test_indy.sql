@@ -2,6 +2,7 @@ create database if not exists cu_amd;
 use cu_amd;
 
 create table ActivityLog(
+	Idx int not null auto_increment,
 	UserID int not null, 
 	DateAndTime datetime(3) not null,
 	X decimal(20,8), 
@@ -11,10 +12,11 @@ create table ActivityLog(
     ActivityIndex decimal(11,8),
     Label int,
     SummarizedFlag bool,
-    primary key(UserID, DateAndTime)
+    primary key(Idx, UserID, DateAndTime)
     );
  
 create table HourlyActivitySummary(
+	Idx int not null auto_increment,
 	UserID int not null,
     Date date not null,
     TimeFrom time(3) not null,
@@ -35,19 +37,21 @@ create table HourlyActivitySummary(
     CountTotal int,
 	CountActiveToInactive int,
     DurationPerAction time(3),
-    primary key(UserID, Date, TimeFrom)
+    primary key(Idx, UserID, Date, TimeFrom)
     );
        
 create table ActivityPeriod(
+	Idx int not null auto_increment,
 	UserID int not null,
     Date date not null,
     ActualFrom time(3) not null,
     ActualUntil time(3) not null,
     Label int,
-    primary key(UserID, Date, ActualFrom)
+    primary key(Idx, UserID, Date, ActualFrom)
 );
 
 create table AuditLog(
+	Idx int not null auto_increment,
     StartProcessTime datetime(3) not null,
     EndProcessTime datetime(3),
     UserID int not null,
@@ -55,10 +59,11 @@ create table AuditLog(
     StartData datetime(3),
     EndData datetime(3),
     ProcessStatus int not null,
-    primary key(StartProcessTime, UserID, ProcessName)
+    primary key(Idx, StartProcessTime, UserID, ProcessName)
 );
 
 create table UserProfile(
+	Idx int not null auto_increment,
 	UserID int not null,
     InitialUpdate datetime(3) not null,
     LatestUpdate datetime(3) not null,
@@ -68,5 +73,5 @@ create table UserProfile(
     MaxX decimal(10,8),
     MaxY decimal(10,8),
     MaxZ decimal(10,8),
-    primary key(UserID)
+    primary key(Idx, UserID)
 );

@@ -43,9 +43,12 @@ def predict_label(df_all_p_sorted):
     window_length = 60
     cols = ['x','y','z']
     y_pred_all = []
-    
+
     df_all_p_sorted['date'] = df_all_p_sorted['timestamp'].apply(lambda x: x.date())
     grouped = df_all_p_sorted.groupby('date')
+
+    df_all_p_sorted['AI'] = pd.Series(calc_ai(df_all_p_sorted))
+    df_all_p_sorted = df_all_p_sorted.drop(columns='date')
 
     for x in grouped:
         label_grp = x[0]
@@ -57,19 +60,27 @@ def predict_label(df_all_p_sorted):
 
         X_impure, y_impure = prepare_impure_label(X_all_p, y_all_p)
         
-        if(X_all_p.shape[0]>=window_length):
-            y_pred = model.predict(X_impure)
+        print('shape', np.array(X_impure).shape)
+        # print('isnan', np.isnan(X_impure))
 
-            y_pred_fill = np.hstack(([y_pred[0] for i in range(window_length-1)], y_pred))
+        if(len(X_impure)>0):
+            if(X_all_p.shape[0]>=window_length):
+                y_pred = model.predict(X_impure)
 
-        else:
-            y_pred_fill = np.array([0 for i in range(X_all_p.shape[0])])
+                y_pred_fill = np.hstack(([y_pred[0] for i in range(window_length-1)], y_pred))
 
-        y_pred_walk = np.array(combine(X_all_p, y_pred_fill))
+            else:
+                y_pred_fill = np.array([0 for i in range(X_all_p.shape[0])])
 
-        y_pred_all.append(y_pred_walk)
-        
-    y_pred_all = np.hstack(y_pred_all)
+            y_pred_walk = np.array(combine(X_all_p, y_pred_fill))
+
+            y_pred_all.append(y_pred_walk)
+    
+    if(len(y_pred_all)>0):
+        y_pred_all = np.hstack(y_pred_all)
+    else:
+        y_pred_all = None
+        return df_all_p_sorted
     
     print('y pred all shape, df all p sorted shape')
     print(y_pred_all.shape)
@@ -81,7 +92,5 @@ def predict_label(df_all_p_sorted):
         df_all_p_sorted.loc[i, 'y_pred'] = y_pred_all[i]
 
     df_all_p_sorted['y_pred'] = df_all_p_sorted['y_pred'].astype(int)
-    df_all_p_sorted['AI'] = pd.Series(calc_ai(df_all_p_sorted))
-    df_all_p_sorted = df_all_p_sorted.drop(columns='date')
 
     return df_all_p_sorted
