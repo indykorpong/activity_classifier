@@ -17,14 +17,16 @@ import time
 
 from datetime import datetime, timedelta
 
-path_to_module = '/var/www/html/python/mysql_connect/python_files'
+# path_to_module = '/var/www/html/python/mysql_connect/python_files'
+path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files'
 
 sys.path.append(path_to_module)
 os.chdir(path_to_module)
 
 # # Set data path
 
-basepath = '/var/www/html/python/mysql_connect/'
+# basepath = '/var/www/html/python/mysql_connect/'
+basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
     
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
@@ -33,6 +35,7 @@ from predict.predict import predict_label
 from summarize.summarize import get_summary
 from load_data.load_data import load_raw_data
 
+from insert_db.insert_db import get_sql_connection
 from insert_db.insert_db import connect_to_database, create_temp_table, reset_status, get_distinct_user_ids
 from insert_db.insert_db import update_summarized_flag, get_unpredicted_data, get_unsummarized_data
 from insert_db.insert_db import insert_db_act_period, insert_db_hourly_summary, insert_db_act_log, insert_db_status
@@ -181,6 +184,23 @@ def main_function():
 
     get_all_day_result(all_patients)
 
+def get_acc_data(user_id):
+    cnx = get_sql_connection()
+
+    sql = "SELECT UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE UserID={};".format(user_id)
+
+    df_to_predict = pd.read_sql(sql, cnx)
+    df_to_predict = df_to_predict.rename(columns={
+        'DateAndTime': 'timestamp',
+        'X': 'x',
+        'Y': 'y',
+        'Z': 'z',
+        'ActivityIndex': 'AI',
+        'Label': 'y_pred'
+    })
+
+    return df_to_predict
+
 if(__name__=='__main__'):
     # schedule_time = "00:00"
 
@@ -193,4 +213,21 @@ if(__name__=='__main__'):
     #     time.sleep(1)
     #     print('waiting')
 
-    main_function()
+    # main_function()
+
+    all_patients = get_distinct_user_ids()
+    print(all_patients)
+
+    f, ax = plt.subplots(nrows=len(all_patients), ncols=1)
+
+    for i, subject_id in enumerate(all_patients):
+        df_acc = get_acc_data(subject_id)
+        df_acc = df_acc.set_index('timestamp')
+        print(df_acc)
+
+        cols = ['x', 'y', 'z']
+        ax[i] = df_acc[cols].plot(use_index=True)
+
+    plt.savefig('acc_plot.png', dpi=200)
+    plt.show()
+        
