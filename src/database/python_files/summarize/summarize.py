@@ -266,6 +266,8 @@ def get_summary(df_all):
 
     cols = ['UserID','date','time','x','y','z','HR','y_pred']
     df_all = df_all[cols]
+    
+    print('df all shape', df_all.shape)
 
     df_cont_list = get_df_continuous_list(df_all)
 

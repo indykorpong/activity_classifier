@@ -15,8 +15,10 @@ status_error = -1
 ## Connect to MySQL database using mysql connector
 
 def connect_to_database():
-    user = 'php'
-    passwd = 'HOD8912+php'
+    # user = 'php'
+    # passwd = 'HOD8912+php'
+    user = 'root'
+    passwd = "1amdjvr'LN"
 
     mydb = mysql.connector.connect(
         host='localhost',
@@ -33,8 +35,10 @@ def connect_to_database():
 ## Connect to MySQL database using sqlalchemy
 
 def get_sql_connection():
-    user = 'php'
-    passwd = 'HOD8912+php'
+    # user = 'php'
+    # passwd = 'HOD8912+php'
+    user = 'root'
+    passwd = "1amdjvr'LN"
 
     host = 'localhost'
     port = '3306'
