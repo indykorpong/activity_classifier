@@ -17,16 +17,16 @@ import time
 
 from datetime import datetime, timedelta
 
-# path_to_module = '/var/www/html/python/mysql_connect/python_files'
-path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files'
+path_to_module = '/var/www/html/python/mysql_connect/python_files'
+# path_to_module = '/Users/Indy/Desktop/coding/Dementia_proj/src/database/python_files'
 
 sys.path.append(path_to_module)
 os.chdir(path_to_module)
 
 # # Set data path
 
-# basepath = '/var/www/html/python/mysql_connect/'
-basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
+basepath = '/var/www/html/python/mysql_connect/'
+# basepath = '/Users/Indy/Desktop/coding/Dementia_proj/'
     
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
@@ -50,34 +50,49 @@ status_started = 0
 status_stopped = 1
 status_error = -1
 
-def get_all_day_result(all_patients):
+def clean_table_data():
+    mydb, mycursor = connect_to_database()
+    sql_list = [
+        # 'update cu_amd.acc_log_2 set loaded_flag=NULL where event_timestamp>DATE_FORMAT("2019-04-29 12:00:00", "%Y-%m-%d %H-%i-%S") and event_timestamp<DATE_FORMAT("2019-05-01 21:30:00", "%Y-%m-%d %H-%i-%S");',
+        # 'update cu_amd.hr_log_2 set loaded_flag=NULL where event_timestamp>DATE_FORMAT("2019-04-29 12:00:00", "%Y-%m-%d %H-%i-%S") and event_timestamp<DATE_FORMAT("2019-05-01 21:30:00", "%Y-%m-%d %H-%i-%S");',
+        # 'delete from cu_amd.ActivityPeriod;',
+        # 'delete from cu_amd.ActivityLog;',
+        # 'update cu_amd.UserProfile set IdxToLoad = 0 where UserID=17;',
+        "SET GLOBAL connect_timeout=28800", 
+        "SET GLOBAL wait_timeout=28800", 
+        "SET GLOBAL interactive_timeout=28800"
+        ]
+
+    for s in sql_list:
+        mycursor.execute(s)
+    mydb.commit()
+
+def get_all_day_result(all_patients, batch_size=10000):
     # Load data, predict activities, and get summary for each patient
 
     for user_id in all_patients:
 
         #### Load and preprocess data
 
-        # Get the reset status of all process status (load, predict, summarize status respectively)
         all_status = reset_status()
         all_status[0] = status_started
 
         start_time = time_str_now()
 
-        # Insert process status into AuditLog table in database
         # StartTime, EndTime, UserID, ProcessName, StartingData, EndingData, ProcessStatus
         insert_db_status(start_time, None, user_id, 'LOAD DATA', None, None, all_status[0])
         # try:
 
-        # Load raw data from accelerometer_log table in database and preprocess the data
         df_all_p = load_raw_data(user_id)
 
         print("loaded data of user: {}".format(user_id))
         print('all status:', all_status)
+        print('df_all_p shape:', df_all_p.shape)
 
-        # If the preprocessed data is not empty for the patient, insert them into
-        # ActivityLog table in database
         if(not df_all_p.empty):
+            df_all_p['timestamp'] = df_all_p['timestamp'].apply(lambda x: np.datetime64(x))
             insert_db_act_log(df_all_p)
+            print('inserted to ActivityLog2')
 
         all_status[0] = status_stopped
         
@@ -86,120 +101,151 @@ def get_all_day_result(all_patients):
 
         stop_time = time_str_now()
 
-        # If there are no new data from smartwatch, insert error status into AuditLog table in database
         if(df_all_p.empty and all_status[0]!=status_error):
             print('no new data')
             all_status[0] = status_error
             insert_db_status(start_time, stop_time, user_id, 'LOAD DATA', None, \
                 None, all_status[0])
 
-            continue
-
         else:
             insert_db_status(start_time, stop_time, user_id, 'LOAD DATA', df_all_p.loc[0, 'timestamp'], \
                 df_all_p.loc[df_all_p.shape[0]-1, 'timestamp'], all_status[0])
 
         print('all status:', all_status)
-            
-        #### Predict
 
+        #### Predict
+    
         # Get the unpredicted data from ActivityLog table in database
-        df_to_predict = get_unpredicted_data(user_id)
-        df_to_predict = df_to_predict.reset_index(drop=True)
+        mydb, mycursor = connect_to_database()
+        current_idx_sql = "SELECT Idx FROM ActivityLog2 WHERE UserID={} and LoadedFlag=False ORDER BY Idx ASC LIMIT 1;".format(user_id)
         
-        all_status = reset_status()
-        print('reset status:', all_status)
-        
-        # If the data is smaller than the time window length, then skip
-        window_length = 60
-        if(df_to_predict.shape[0]<window_length):
+        # mycursor.execute(act_log_2_sql)
+        mycursor.execute(current_idx_sql)
+        result = mycursor.fetchone()
+        print('rowcount:', mycursor.rowcount)
+        if(mycursor.rowcount>0):
+            current_idx = result[0]
+        else:
             continue
 
-        all_status[1] = status_started
-        start_time = time_str_now()
-        insert_db_status(start_time, None, user_id, 'PREDICT', None, None, all_status[1])
+        last_res_sql = "SELECT @LastResultIdx := Idx FROM ActivityLog2 WHERE LoadedFlag=False and UserID={} ORDER BY Idx DESC LIMIT 1;".format(user_id)
+        mycursor.execute(last_res_sql)
+        result = mycursor.fetchone()
+        if(mycursor.rowcount>0):
+            last_idx = result[0]
+        else:
+            last_idx = 0
+        print('last idx:', last_idx)
 
-        # try:
-        print("started predicting on user: {}".format(user_id))
-        
-        # Predict activity labels of the patient
-        df_all_p_sorted = predict_label(df_to_predict)
+        mydb.commit()
 
-        # Update the Label field in ActivityLog table in database
-        insert_db_act_log(df_all_p_sorted, update=True)
+        while(current_idx<last_idx):
+            print('start fetching unpredicted data of user:', user_id)
+            df_to_predict, new_current_idx = get_unpredicted_data(user_id, current_idx)
+            print('current idx:', current_idx)
+            # print('new current idx:', new_current_idx)
 
-        print("finished predicting on user: {}".format(user_id))
+            if(df_to_predict.empty):
+                print('empty dataframe')
+                break
+            # if(current_idx>last_idx):
+            #     break
 
-        all_status[1] = status_stopped
-        
-        # except:
-        #     all_status[1] = status_error
+            df_to_predict = df_to_predict.reset_index(drop=True)
+            print('df to predict shape', df_to_predict.shape)
+            print(df_to_predict.head(3))
+            print(df_to_predict.tail(3))
+            
+            current_idx = new_current_idx
+            print('current idx 2:', current_idx)
 
-        stop_time = time_str_now()
-        print(all_status, start_time, stop_time)
-        insert_db_status(start_time, stop_time, user_id, 'PREDICT', df_all_p_sorted.loc[0, 'timestamp'], \
-            df_all_p_sorted.loc[df_all_p_sorted.shape[0]-1, 'timestamp'], all_status[1])
+            all_status = reset_status()
+            print('reset status:', all_status)
+            print('finished fetching unpredicted data of user:', user_id)
 
-        #### Summarize
+            H = 10          # window size of bai's equation
+            if(df_to_predict.shape[0]<H):
+                break       # stop fetching data and break from loop because the data is too short
 
-        all_status[2] = status_started
-        start_time = time_str_now()
-        insert_db_status(start_time, None, user_id, 'SUMMARIZE RESULTS', None, None, all_status[2])
+            all_status[1] = status_started
+            start_time = time_str_now()
+            insert_db_status(start_time, None, user_id, 'PREDICT', None, None, all_status[1])
 
-        # Get the unsummarized data from ActivityLog table in database
-        df_to_summarize = get_unsummarized_data(user_id)
+            # try:
+            print("started predicting on user: {}".format(user_id))
+            
+            # Predict activity labels of the patient
+            cols = ['x', 'y', 'z']
+            for c in cols:
+                filt = df_to_predict[c].notnull()
+                df_to_predict = df_to_predict[filt]
+            df_to_predict = df_to_predict.reset_index(drop=True)
 
-        # try:
-        print("started summarizing on user: {}".format(user_id))
+            df_all_p_sorted = predict_label(df_to_predict)
+            df_all_p_sorted['timestamp'] = df_all_p_sorted['timestamp'].apply(lambda x: np.datetime64(x))
+            print(df_all_p_sorted.head(3))
 
-        # Summarize the predicted results and get activity summary and activity period for the patient
-        df_summary_all, df_act_period = get_summary(df_to_summarize)
+            # Update the Label field in ActivityLog table in database
+            insert_db_act_log(df_all_p_sorted, update=True)
 
-        # Insert the summary and activity period into HourlyActivitySummary table 
-        # and ActivityPeriod table in database respectively
-        insert_db_hourly_summary(df_summary_all)
-        insert_db_act_period(df_act_period)
+            print("finished predicting on user: {}".format(user_id))
 
-        print('finished summarizing on user: {}'.format(user_id))
+            all_status[1] = status_stopped
+            
+            # except:
+            #     all_status[1] = status_error
 
-        all_status[2] = status_stopped
+            stop_time = time_str_now()
+            print(all_status, start_time, stop_time)
+            insert_db_status(start_time, stop_time, user_id, 'PREDICT', df_all_p_sorted.loc[0, 'timestamp'], \
+                df_all_p_sorted.loc[df_all_p_sorted.shape[0]-1, 'timestamp'], all_status[1])
 
-        # Set the SummarizedFlag in ActivityLog table in database to TRUE(1)
-        update_summarized_flag(user_id)
+            #### Summarize
 
-        # except:
-        #     all_status[2] = status_error
-        
-        stop_time = time_str_now()
-        insert_db_status(start_time, stop_time, user_id, 'SUMMARIZE RESULTS', df_all_p_sorted.loc[0, 'timestamp'], \
-            df_all_p_sorted.loc[df_all_p_sorted.shape[0]-1, 'timestamp'], all_status[2])
+            all_status[2] = status_started
+            start_time = time_str_now()
+            insert_db_status(start_time, None, user_id, 'SUMMARIZE RESULTS', None, None, all_status[2])
 
-        print('all status:', all_status)
+            # try:
+            print("started summarizing on user: {}".format(user_id))
+
+            # Summarize the predicted results and get activity summary and activity period for the patient
+            df_summary_all, df_act_period = get_summary(df_all_p_sorted)
+
+            # Insert the summary and activity period into HourlyActivitySummary table 
+            # and ActivityPeriod table in database respectively
+            insert_db_hourly_summary(df_summary_all)
+            insert_db_act_period(df_act_period)
+
+            print('finished summarizing on user: {}'.format(user_id))
+
+            all_status[2] = status_stopped
+
+            # Set the SummarizedFlag in ActivityLog table in database to TRUE(1)
+            update_summarized_flag(user_id, current_idx)
+
+            # except:
+            #     all_status[2] = status_error
+            
+            stop_time = time_str_now()
+            
+            start_data = df_all_p_sorted.loc[0, 'timestamp'].strftime(datetime_format)
+            end_data = df_all_p_sorted.loc[df_all_p_sorted.shape[0]-1, 'timestamp'].strftime(datetime_format)
+
+            insert_db_status(start_time, stop_time, user_id, 'SUMMARIZE RESULTS', start_data, \
+                end_data, all_status[2])
+
+            print('all status:', all_status)
 
 def main_function():
     all_patients = get_distinct_user_ids()
-    print('all patients:', all_patients)
+    # all_patients = [17]
+    print('all user ids:', all_patients)
 
     create_temp_table()     # Import data from original tables to temporary tables
+    clean_table_data()
 
     get_all_day_result(all_patients)
-
-def get_acc_data(user_id):
-    cnx = get_sql_connection()
-
-    sql = "SELECT UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE UserID={};".format(user_id)
-
-    df_to_predict = pd.read_sql(sql, cnx)
-    df_to_predict = df_to_predict.rename(columns={
-        'DateAndTime': 'timestamp',
-        'X': 'x',
-        'Y': 'y',
-        'Z': 'z',
-        'ActivityIndex': 'AI',
-        'Label': 'y_pred'
-    })
-
-    return df_to_predict
 
 if(__name__=='__main__'):
     # schedule_time = "00:00"
@@ -213,21 +259,5 @@ if(__name__=='__main__'):
     #     time.sleep(1)
     #     print('waiting')
 
-    # main_function()
-
-    all_patients = get_distinct_user_ids()
-    print(all_patients)
-
-    f, ax = plt.subplots(nrows=len(all_patients), ncols=1)
-
-    for i, subject_id in enumerate(all_patients):
-        df_acc = get_acc_data(subject_id)
-        df_acc = df_acc.set_index('timestamp')
-        print(df_acc)
-
-        cols = ['x', 'y', 'z']
-        ax[i] = df_acc[cols].plot(use_index=True)
-
-    plt.savefig('acc_plot.png', dpi=200)
-    plt.show()
+    main_function()
         
