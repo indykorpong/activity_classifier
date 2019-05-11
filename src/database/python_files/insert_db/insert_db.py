@@ -13,12 +13,17 @@ status_stopped = 1
 status_error = -1
 
 ## Connect to MySQL database using mysql connector
+class Datetime64Converter(mysql.connector.conversion.MySQLConverter):
+    """ A mysql.connector Converter that handles datetime64 types """
+
+    def _timestamp_to_mysql(self, value):
+        return value.strftime('%Y-%m-%d %H:%M:%S.%f').encode('ascii')
 
 def connect_to_database():
-    # user = 'php'
-    # passwd = 'HOD8912+php'
-    user = 'root'
-    passwd = "1amdjvr'LN"
+    user = 'php'
+    passwd = 'HOD8912+php'
+    # user = 'root'
+    # passwd = "1amdjvr'LN"
 
     mydb = mysql.connector.connect(
         host='localhost',
@@ -28,17 +33,18 @@ def connect_to_database():
         )
 
     print('connected to database')
-    mycursor = mydb.cursor()
+    mydb.set_converter_class(Datetime64Converter)
+    mycursor = mydb.cursor(buffered=True)
 
     return mydb, mycursor
 
 ## Connect to MySQL database using sqlalchemy
 
 def get_sql_connection():
-    # user = 'php'
-    # passwd = 'HOD8912+php'
-    user = 'root'
-    passwd = "1amdjvr'LN"
+    user = 'php'
+    passwd = 'HOD8912+php'
+    # user = 'root'
+    # passwd = "1amdjvr'LN"
 
     host = 'localhost'
     port = '3306'
@@ -109,27 +115,27 @@ def insert_db_status(start_time, end_time, user_id, process_name, starting_data,
     print(process_name, status)
 
     # Set the query string and values to insert into AuditLog table
-    try:
-        if(status==status_started):
-            sql = insert_sql
-            values = (start_time, datetime_format, end_time, user_id, process_name, status)
+    # try:
+    if(status==status_started):
+        sql = insert_sql
+        values = (start_time, datetime_format, end_time, user_id, process_name, status)
 
-        if(status==status_stopped or status==status_error):
-            sql = update_sql
-            values = (status, start_time, process_name)
-            values2 = (end_time, start_time, process_name)
-
-        if(status==status_stopped):
-            start_data_values = (starting_data, datetime_format, user_id, start_time, process_name)
-            end_data_values = (ending_data, datetime_format, user_id, start_time, process_name)
-
-            mycursor.execute(start_data_sql, start_data_values)
-            mycursor.execute(end_data_sql, end_data_values)
-
-    except:
+    if(status==status_stopped or status==status_error):
         sql = update_sql
-        values = (status_error, start_time, process_name)
-        error = True
+        values = (status, start_time, process_name)
+        values2 = (end_time, start_time, process_name)
+
+    if(status==status_stopped):
+        start_data_values = (starting_data, datetime_format, user_id, start_time, process_name)
+        end_data_values = (ending_data, datetime_format, user_id, start_time, process_name)
+
+        mycursor.execute(start_data_sql, start_data_values)
+        mycursor.execute(end_data_sql, end_data_values)
+
+    # except:
+        # sql = update_sql
+        # values = (status_error, start_time, process_name)
+        # error = True
     
     # Try executing the sql query with values. If fails, set status to error status
     try:
@@ -151,10 +157,10 @@ def insert_db_status(start_time, end_time, user_id, process_name, starting_data,
 def insert_db_act_log(df_all_p, update=False):
     mydb, mycursor = connect_to_database()
 
-    datetime_format = '%Y-%m-%d %H:%M:%S.%f'
+    # datetime_format = '%Y-%m-%d %H:%M:%S.%f'
 
     # Convert timestamp column from datetime format to string format
-    df_all_p['timestamp'] = df_all_p['timestamp'].apply(lambda x: x.strftime(datetime_format))
+    # df_all_p['timestamp'] = df_all_p['timestamp'].apply(lambda x: x + timedelt)
     df_all_p = df_all_p.rename(columns={
         'timestamp': 'DateAndTime',
         'x': 'X',
@@ -163,32 +169,41 @@ def insert_db_act_log(df_all_p, update=False):
         'AI': 'ActivityIndex',
         'y_pred': 'Label'
     })
+    # df_all_p = df_all_p.drop(columns=['timestamp'])
+    print('df act log:', df_all_p.head(3))
+    print('df act log:', df_all_p.tail(3))
+    print(df_all_p['DateAndTime'].dtypes)
 
-    # Set the sql insert query depending on the value of 'update' variable
-    # If False, insert normally
     if(not update):
-        sql = "INSERT INTO ActivityLog (UserID, DateAndTime, X, Y, Z, HR) \
+        # df_all_p.to_sql('ActivityLog2', con=cnx, schema='cu_amd', if_exists='append', index=False, index_label=None, chunksize=10000)
+
+        sql = "INSERT INTO ActivityLog2 (UserID, DateAndTime, X, Y, Z, HR) \
             VALUES (%s, %s, %s, %s, %s, %s)"
 
         values = zip(df_all_p['UserID'], df_all_p['DateAndTime'], \
             df_all_p['X'], df_all_p['Y'], df_all_p['Z'], df_all_p['HR'])
 
+        for val in values:
+            mycursor.execute(sql, val)
+
     # If True, update the values of ActivityIndex and Label
     else:
-        sql = "INSERT INTO ActivityLog (UserID, DateAndTime) \
-            VALUES (%s, %s) \
-            ON DUPLICATE KEY UPDATE \
-            X=%s, Y=%s, Z=%s, HR=%s, \
-            ActivityIndex=%s, Label=%s;"
-
         values = zip(df_all_p['UserID'], df_all_p['DateAndTime'], \
             df_all_p['X'], df_all_p['Y'], df_all_p['Z'], df_all_p['HR'], \
             df_all_p['ActivityIndex'], df_all_p['Label'])
 
-        print('update activity log')
+        for val in values:
+            u_id = val[0]; dt = val[1]; x_i = val[2]; y_i = val[3]; z_i = val[4]
+            hr_i = val[5]; ai_i = val[6]; label_i = val[7]
+            
+            ai_sql = "UPDATE ActivityLog2 SET ActivityIndex={} WHERE UserID={} and DateAndTime='{}';".format(ai_i, u_id, dt)
+            label_sql = "UPDATE ActivityLog2 SET Label={} WHERE UserID={} and DateAndTime='{}';".format(label_i, u_id, dt)
+
+            mycursor.execute(ai_sql)
+            mycursor.execute(label_sql)
+
+        print('update activity log 2')
     
-    for z in values:
-        mycursor.execute(sql, z)
     mydb.commit()
 
 ## Insert the hourly activity summary of the patient into HourlyActivitySummary table in database
@@ -351,11 +366,11 @@ def get_patients_acc_hr(user_id):
     df_hr = pd.DataFrame()
 
     # Select all accelerometer data of the patient which has not been loaded yet
-    sql = "SELECT * FROM cu_amd.acc_log_2 WHERE loaded_flag IS NULL and user_id='{}';".format(user_id)
+    sql = "SELECT * FROM cu_amd.acc_log_2 WHERE loaded_flag=False and user_id='{}';".format(user_id)
 
     mycursor.execute(sql)
     records = mycursor.fetchall()
-    print('length: ', mycursor.rowcount)
+    print('acc length: ', mycursor.rowcount)
 
     # If the selected data is not empty or null, append them to df_acc
     if(mycursor.rowcount!=0):
@@ -364,9 +379,9 @@ def get_patients_acc_hr(user_id):
         user_ids = []
 
         for row in records:
-            xyz.append([row[1], row[2], row[3]])
-            timestamp.append(row[0])
-            user_ids.append(row[4])
+            xyz.append([row[2], row[3], row[4]])
+            timestamp.append(row[1])
+            user_ids.append(row[5])
         xyz = np.array(xyz)
 
         df_i = pd.DataFrame({'UserID': user_ids,
@@ -378,11 +393,11 @@ def get_patients_acc_hr(user_id):
         df_acc = df_acc.append(df_i)
 
         # Select all heart rate data of the patient which has not been loaded yet
-        sql2 = "SELECT * FROM cu_amd.hr_log_2 WHERE loaded_flag IS NULL and user_id='{}';".format(user_id)
+        sql2 = "SELECT * FROM cu_amd.hr_log_2 WHERE loaded_flag=False and user_id='{}';".format(user_id)
 
         mycursor.execute(sql2)
         records = mycursor.fetchall()
-        print('length: ', mycursor.rowcount)
+        print('hr length: ', mycursor.rowcount)
 
         # If the selected data is not empty or null, append them to df_hr
         if(mycursor.rowcount!=0):
@@ -391,9 +406,9 @@ def get_patients_acc_hr(user_id):
             user_ids = []
 
             for row in records:
-                hr.append(row[1])
-                timestamp.append(row[0])
-                user_ids.append(row[2])
+                hr.append(row[2])
+                timestamp.append(row[1])
+                user_ids.append(row[3])
 
             df_hr_i = pd.DataFrame({'UserID': user_ids,
                                 'timestamp': timestamp,
@@ -402,8 +417,8 @@ def get_patients_acc_hr(user_id):
             df_hr = df_hr.append(df_hr_i)
 
         # update the values of loaded_flag to 1
-        sql3 = "UPDATE cu_amd.acc_log_2 SET loaded_flag=TRUE WHERE loaded_flag IS NULL and user_id={};".format(user_id)
-        sql4 = "UPDATE cu_amd.hr_log_2 SET loaded_flag=TRUE WHERE loaded_flag IS NULL and user_id={};".format(user_id)
+        sql3 = "UPDATE cu_amd.acc_log_2 SET loaded_flag=TRUE WHERE loaded_flag=False and user_id={};".format(user_id)
+        sql4 = "UPDATE cu_amd.hr_log_2 SET loaded_flag=TRUE WHERE loaded_flag=False and user_id={};".format(user_id)
 
         mycursor.execute(sql3)
         mycursor.execute(sql4)
@@ -414,29 +429,113 @@ def get_patients_acc_hr(user_id):
 
 ## Select unpredicted data of the patient from ActivityLog table in database
 
-def get_unpredicted_data(user_id):
-    cnx = get_sql_connection()
+def get_unpredicted_data(user_id, current_idx, batch_size=5000, time=300000):
+    mydb, mycursor = connect_to_database()
+    print('current idx:', current_idx)
 
-    sql = "SELECT UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE Label IS NULL and UserID={};".format(user_id)
+    set_exec_time_sql = [
+        "SET GLOBAL connect_timeout=28800", 
+        "SET GLOBAL wait_timeout=28800", 
+        "SET GLOBAL interactive_timeout=28800"
+    ]
 
-    df_to_predict = pd.read_sql(sql, cnx)
-    df_to_predict = df_to_predict.rename(columns={
-        'DateAndTime': 'timestamp',
-        'X': 'x',
-        'Y': 'y',
-        'Z': 'z',
-        'ActivityIndex': 'AI',
-        'Label': 'y_pred'
-    })
+    set_user_sql = "SELECT @UserID := {}".format(user_id)
+    first_res_sql = "SELECT @FirstResultIdx := Idx FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID ORDER BY Idx ASC LIMIT 1;"
+    last_res_sql = "SELECT @LastResultIdx := Idx FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID ORDER BY Idx DESC LIMIT 1;"
+    
+    init_idx_sql = "SELECT @IdxToLoad1 := Idx FROM (SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID ORDER BY Idx ASC) AS table0 limit 1;"
+    table_idx_sql = "SELECT @IdxToLoad2 := IdxToLoad from (SELECT IdxToLoad FROM UserProfile WHERE UserID=@UserID) AS table1 limit 1;"
+    set_idx_sql = "SELECT @IdxToLoad_0 := IF(@IdxToLoad2 < @IdxToLoad1, @IdxToLoad2, @IdxToLoad1);"
+    set_idx_sql_2 = "SELECT @IdxToLoad_0 := IF(@IdxToLoad_0 IS NULL, 0, @IdxToLoad_0);"
+    
+    query_1_sql = "SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID and Idx<=@LastResultIdx and Idx>=@IdxToLoad_0 and Idx<@IdxToLoad_0+{} and Idx>={};".format(batch_size, current_idx)
+    
+    set_load_idx_sql = "SELECT @IdxLoaded := IF(@IdxToLoad_0+{}>@LastResultIdx, @LastResultIdx, @IdxToLoad_0+{});".format(batch_size, batch_size)
+    update_table_sql = "UPDATE cu_amd.UserProfile set IdxToLoad := @IdxLoaded where UserID=@UserID;"
 
-    return df_to_predict
+    update_loaded_flag_sql = "UPDATE cu_amd.ActivityLog2 SET LoadedFlag=TRUE WHERE LoadedFlag=False and UserID=@UserID and Idx<@IdxLoaded;"
+
+    # try:
+    for query in set_exec_time_sql:
+        mycursor.execute(query)
+    mydb.commit()
+    print('set exec time')
+
+    # mycursor.execute(insert_act_log_2_sql)
+    mycursor.execute(set_user_sql)
+    mycursor.execute(last_res_sql)
+    mycursor.execute(init_idx_sql)
+    mycursor.execute(table_idx_sql)
+    mycursor.execute(set_idx_sql)
+    mycursor.execute(set_idx_sql_2)
+
+    mycursor.execute(query_1_sql)
+    records = mycursor.fetchall()
+    print('records length:', len(records))
+    mydb.commit()
+    
+    df_to_predict = pd.DataFrame()
+
+    if(mycursor.rowcount!=0):
+        user_ids = []
+        timestamp = []
+        xyz = []
+        hr = []
+        lbl = []
+
+        for row in records:
+            user_ids.append(row[1])
+            timestamp.append(row[2])
+            xyz.append([row[3], row[4], row[5]])
+            hr.append(row[6])
+            lbl.append(row[7])
+
+        xyz = np.array(xyz)
+
+        df_i = pd.DataFrame({
+            'UserID': user_ids,
+            'timestamp': timestamp,
+            'x': xyz.transpose()[0],
+            'y': xyz.transpose()[1],
+            'z': xyz.transpose()[2],
+            'HR': hr,
+            'y_pred': lbl    
+        })
+
+        df_to_predict = df_to_predict.append(df_i)
+
+    mycursor.execute(first_res_sql)
+    result = mycursor.fetchone()
+    if(mycursor.rowcount==0):
+        print('here1')
+        return df_to_predict, current_idx
+    new_current_idx = result[0]
+    print('spot1')
+    print('new current idx:', new_current_idx)
+
+    mycursor.execute(set_load_idx_sql)
+    result = mycursor.fetchone()
+    print(result)
+    if(mycursor.rowcount==0):
+        print('here2')
+        return df_to_predict, new_current_idx
+    
+    print('spot2')
+    print('new current idx:', new_current_idx)
+
+    mycursor.execute(update_table_sql)
+    mycursor.execute(update_loaded_flag_sql)
+    mydb.commit()
+
+    return df_to_predict, new_current_idx
+
 
 ## Select unsummarized data of the patient from ActivityLog table in database
 
 def get_unsummarized_data(user_id):
     cnx = get_sql_connection()
 
-    sql = "SELECT UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE SummarizedFlag IS NULL and UserID={};".format(user_id)
+    sql = "SELECT UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE SummarizedFlag=False and UserID={};".format(user_id)
 
     df_to_summarize = pd.read_sql(sql, cnx)
     df_to_summarize = df_to_summarize.rename(columns={
@@ -464,10 +563,10 @@ def get_distinct_user_ids():
 
 ## Update SummarizedFlag in ActivityLog table in database
 
-def update_summarized_flag(user_id):
+def update_summarized_flag(user_id, current_idx):
     mydb, mycursor = connect_to_database()
     
-    sql = "UPDATE cu_amd.ActivityLog SET SummarizedFlag=TRUE WHERE SummarizedFlag IS NULL and UserID={};".format(user_id)
+    sql = "UPDATE cu_amd.ActivityLog2 SET SummarizedFlag=TRUE WHERE SummarizedFlag=False and UserID={} and Idx<={};".format(user_id, current_idx)
 
     mycursor.execute(sql)
     mydb.commit()
@@ -477,12 +576,18 @@ def update_summarized_flag(user_id):
 def get_user_profile(user_id):
     mydb, mycursor = connect_to_database()
 
-    get_user_profile_sql = "SELECT MinX, MinY, MinZ, MaxX, MaxY, MaxZ FROM UserProfile WHERE UserID={};".format(user_id)
+    get_user_profile_sql = "SELECT MinX, MinY, MinZ, MaxX, MaxY, MaxZ FROM cu_amd.UserProfile WHERE UserID={};".format(user_id)
+    get_distinct_user_sql = "SELECT distinct UserID from cu_amd.UserProfile;"
 
     mycursor.execute(get_user_profile_sql)
     user_profile = mycursor.fetchall()
+    
+    mycursor.execute(get_distinct_user_sql)
+    result = mycursor.fetchall()
+    distinct_user_ids = [a[0] for a in result]
+    print('distinct users:', distinct_user_ids)
 
-    if(len(user_profile)==0):
+    if(not user_id in distinct_user_ids):
         get_min_max_sql = "SELECT MIN(x), MIN(y), MIN(z), MAX(x), MAX(y), MAX(z) FROM acc_log_2 WHERE user_id={};".format(user_id)
         
         mycursor.execute(get_min_max_sql)

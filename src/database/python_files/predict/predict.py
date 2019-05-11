@@ -23,7 +23,7 @@ basepath = '/var/www/html/python/mysql_connect/'
 datapath = basepath + 'DDC_Data/'
 mypath = basepath + 'DDC_Data/raw/'
 
-model_path = basepath + 'model/knn_model.pkl'
+model_path = basepath + 'model/knn_model_2.pkl'
 
 from os import listdir, walk
 from os.path import isfile, join
@@ -60,19 +60,22 @@ def predict_label(df_all_p_sorted):
 
         X_impure, y_impure = prepare_impure_label(X_all_p, y_all_p)
         
-        print('shape', np.array(X_impure).shape)
-        # print('isnan', np.isnan(X_impure))
+        print('X_impure shape:', np.array(X_impure).shape)
 
         if(len(X_impure)>0):
             if(X_all_p.shape[0]>=window_length):
+                # print(X_impure)
                 y_pred = model.predict(X_impure)
 
-                y_pred_fill = np.hstack(([y_pred[0] for i in range(window_length-1)], y_pred))
+                fill_shape = y_all_p.shape[0]-X_impure.shape[0]+1
+                y_pred_fill = np.hstack(([y_pred[0] for i in range(fill_shape)], y_pred))
 
             else:
+                # print(X_impure)
                 y_pred_fill = np.array([0 for i in range(X_all_p.shape[0])])
 
             y_pred_walk = np.array(combine(X_all_p, y_pred_fill))
+            print(y_pred_walk.shape)
 
             y_pred_all.append(y_pred_walk)
     
@@ -92,5 +95,6 @@ def predict_label(df_all_p_sorted):
         df_all_p_sorted.loc[i, 'y_pred'] = y_pred_all[i]
 
     df_all_p_sorted['y_pred'] = df_all_p_sorted['y_pred'].astype(int)
+    print(df_all_p_sorted.head(3))
 
     return df_all_p_sorted

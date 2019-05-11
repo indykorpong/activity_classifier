@@ -40,20 +40,12 @@ def nn_classifier(X, y, k=6):
 ## Make Overlapping Time Window
 
 def make_overlapping(X, y, window_length = 60):
-    length = X.shape[0]
     X_new = []
     y_new = []
-
-    for i in range(length):
-        X_temp = []
-        for j in range(window_length):
-            if(i+j<length):
-                X_temp.append(X[i+j])
-
-        if(i+window_length-1<length):
-            X_new.append(X_temp)
-            y_new.append(y[i+window_length-1])
-
+    
+    X_new = [X[i:i+window_length] for i in range(X.shape[0]) if(i+window_length<X.shape[0])]
+    y_new = [y[0] for i in range(X.shape[0]) if(i+window_length<X.shape[0])]
+    
     return np.array(X_new), np.array(y_new)
 
 
@@ -71,10 +63,10 @@ def concat_xyz(X):
 ## Reshape Data (Impure Label)
 
 def prepare_impure_label(X, y, window_length=60):
-    if(X.shape[0]<window_length):
-        return [], []
-
     X_ol, y_ol = make_overlapping(X, y)
+    if(X.shape[0]<window_length):
+        X_ol = X
+        
     X_concat_ol = concat_xyz(X_ol)
 
     return X_concat_ol, y_ol

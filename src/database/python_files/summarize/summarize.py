@@ -31,7 +31,8 @@ n_hours = 24    # hours in 1 day
 midnight = datetime.strptime('00:00:00.000', time_format)
 midnight_time = midnight.time()
 
-zero_date = datetime(1900, 1, 1)
+zero_datetime = datetime(1900, 1, 1)
+zero_date = date(1900, 1, 1)
 
 act_label_list = [0, 1, 2, 3]       # sit sleep stand walk
 act_duration_cols = ['DurationSit', 'DurationSleep', 'DurationStand', 'DurationWalk']
@@ -53,66 +54,82 @@ def get_df_continuous_list(df_i):
 
     return df_cont_list
 
+def recursive_segment(df_segment, df_hour_dict, a, b):
+    if(df_segment.shape[0]<=0 or df_segment.empty):
+        print('here2')
+        return df_hour_dict, a
+
+    keep = 0
+    df_segment = df_segment.reset_index(drop=True)
+
+    print('a and b:', a, b)
+    for j in range(df_segment.shape[0]):
+        if(keep<df_segment.shape[0] and df_segment.loc[keep, 'timestamp']>a and df_segment.loc[df_segment.shape[0]-1, 'timestamp']<=b):
+            df_hour_dict[a] = pd.concat([df_hour_dict[a], df_segment[keep:df_segment.shape[0]]], ignore_index=True)
+            keep = df_segment.shape[0]
+        elif(j>0 and j-keep>0 and df_segment.loc[keep, 'timestamp']>a and df_segment.loc[j-1, 'timestamp']<=b 
+            and df_segment.loc[j, 'timestamp']>b):
+
+            df_hour_dict[a] = pd.concat([df_hour_dict[a], df_segment[keep:j]], ignore_index=True)
+            df_remainder = df_segment[j:]
+
+            if(df_remainder.shape[0]>0 or not df_remainder.empty):
+                return recursive_segment(df_remainder, df_hour_dict, a+timedelta(hours=1), b+timedelta(hours=1))
+
+    return {}, zero_datetime
+
 def separate_hourly(df_cont_list):
     df_sep_list = []
-    time_col_idx = 2
-    cols = ['UserID', 'date', 'time', 'x', 'y', 'z', 'HR', 'y_pred']
-
-    q = Queue()
 
     for i in range(len(df_cont_list)):
         df_segment = df_cont_list[i].copy()
         df_segment['time'] = df_segment['time'].apply(lambda x: datetime.strptime(x, time_format))
-        q.put(df_segment)
+        df_segment = df_segment.reset_index(drop=True)
 
-    while(not q.empty()):
-        df_segment = q.get()
+        print('date:', df_segment.loc[0, 'date'])
+        days_delta = (df_segment.loc[0, 'date'] - zero_date).days
 
-        start_time_of_segment = df_segment.iloc[0, time_col_idx]
-        end_time_of_segment = df_segment.iloc[len(df_segment)-1, time_col_idx]
+        df_hour_dict = {}
 
         for h in range(n_hours):
-            base_time = midnight + timedelta(hours=h)
-            end_time = midnight + timedelta(hours=h+1)
+            hour_start = midnight + timedelta(hours=h) + timedelta(days=days_delta)
+            df_hour_dict[hour_start] = pd.DataFrame()
 
-            if(base_time<=start_time_of_segment and end_time>=end_time_of_segment):
-                df_sep_list.append(df_segment)
-                break
-            elif(base_time<=start_time_of_segment and end_time<end_time_of_segment):
-                df_seg_1 = pd.DataFrame()
-                for j in range(df_segment.shape[0]):
-                    if(df_segment.iloc[j, time_col_idx]<=end_time):
-                        df_seg_1 = df_seg_1.append(df_segment.iloc[j])
-                    else:
-                        keep_idx = j
-                        break
+        a_next = midnight + timedelta(days=days_delta)
+        for h in range(n_hours):
+            a = midnight + timedelta(hours=h) + timedelta(days=days_delta)      # hour start
+            b = midnight + timedelta(hours=h+1) + timedelta(days=days_delta)    # hour end
+            # print(a, a_next, b)
 
-                if(df_seg_1.empty):
-                    df_sep_list.append(df_seg_1)
-                else:
-                    df_sep_list.append(df_seg_1[cols])
+            if(a_next>a):
+                a = a_next
 
-                if(df_seg_1.shape[0]!=0 and df_seg_1.shape[0]<df_segment.shape[0]):
-                    df_seg_2 = pd.DataFrame()
-                    for j in range(keep_idx, df_segment.shape[0]):
-                        df_seg_2 = df_seg_2.append(df_segment.iloc[j])
+            df_hour_dict_i, a_next = recursive_segment(df_segment, df_hour_dict, a, b)
+            if(a_next!=zero_datetime):
+                for t in range(a, a_next, timedelta(hours=1)):
+                    df_hour_dict[t] = df_hour_dict_i[t]
+            
+        for h in range(n_hours):
+            a = midnight + timedelta(hours=h) + timedelta(days=days_delta)      # hour start
+            
+            if(len(df_hour_dict[a])>0):
+                df_sep_list.append(df_hour_dict[a])
 
-                    if(df_seg_2.empty):
-                        q.put(df_seg_2)
-                    else:
-                        q.put(df_seg_2[cols])
+    print('df sep list length:', len(df_sep_list))
+    print('df sep list[0] length:', len(df_sep_list[0]))
+    print('df sep list[-1] length:', len(df_sep_list[-1]))
 
     return df_sep_list
+
 
 def get_act_period(df_sep_list):
     df_act_period_i = pd.DataFrame()
     cols = ['UserID', 'Date', 'ActualFrom', 'ActualUntil', 'Label']
 
     for i in range(len(df_sep_list)):
-        df_sep_list_i = df_sep_list[i].copy()
-        df_sep_list_i = df_sep_list_i.reset_index(drop=True)
+        df_sep_list_i = df_sep_list[i]
 
-        if(not df_sep_list_i.empty):
+        if(len(df_sep_list_i)!=0):
             df_temp = pd.DataFrame({
                 'UserID': int(df_sep_list_i.loc[0, 'UserID']),
                 'Date': df_sep_list_i.loc[0, 'date'],
@@ -230,17 +247,17 @@ def get_df_summary(df_act_period):
                         elif(lb==2 or lb==3):
                             df_summary.loc[j, 'CountActive'] += act_count_list[lb]
 
-                    df_summary.loc[j, 'TotalDuration'] = np.sum([(df_summary.loc[j, act_duration_cols[lb]] - zero_date) for lb in act_label_list])
-                    df_summary.loc[j, 'TotalDuration'] += zero_date
+                    df_summary.loc[j, 'TotalDuration'] = np.sum([(df_summary.loc[j, act_duration_cols[lb]] - zero_datetime) for lb in act_label_list])
+                    df_summary.loc[j, 'TotalDuration'] += zero_datetime
 
                     df_summary.loc[j, 'CountTotal'] = np.sum([df_summary.loc[j, act_count_cols[lb]] for lb in act_label_list])
 
                     if(df_summary.loc[j, 'CountTotal']!=0):
-                        total_td = df_summary.loc[j, 'TotalDuration'] - zero_date
+                        total_td = df_summary.loc[j, 'TotalDuration'] - zero_datetime
                         micro_seconds = total_td.microseconds + 1000000 * (total_td.seconds + 86400 * total_td.days)
                         duration_per_action = micro_seconds/ df_summary.loc[j, 'CountTotal']
 
-                        df_summary.loc[j, 'DurationPerAction'] = zero_date + timedelta(microseconds=duration_per_action)
+                        df_summary.loc[j, 'DurationPerAction'] = zero_datetime + timedelta(microseconds=duration_per_action)
 
                     break
                     
@@ -261,10 +278,11 @@ def get_summary(df_all):
 
     df_act_period = pd.DataFrame()
 
+    # df_all['timestamp'] = df_all['timestamp'].apply(lambda x: datetime.strptime(x, datetime_format))
     df_all['date'] = df_all['timestamp'].apply(lambda x: x.date())
     df_all['time'] = df_all['timestamp'].apply(lambda x: x.strftime('%H:%M:%S.%f'))
 
-    cols = ['UserID','date','time','x','y','z','HR','y_pred']
+    cols = ['UserID','timestamp','date','time','x','y','z','HR','y_pred']
     df_all = df_all[cols]
     
     print('df all shape', df_all.shape)

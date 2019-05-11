@@ -22,7 +22,7 @@ def merge_acc_and_hr(df_filt, df_hr):
                     hr_cnt += 1
             df_filt.loc[i,'HR'] = df_hr.loc[hr_cnt,'hr']
     else:
-        df_filt['HR'] = pd.Series([None for i in range(df_filt.shape[0])])
+        df_filt['HR'] = pd.Series([0 for i in range(df_filt.shape[0])])
 
     if(not df_filt.empty):
         # Divide by g (standard gravity) and normalize by min-max scaling
@@ -41,7 +41,7 @@ def merge_acc_and_hr(df_filt, df_hr):
 
     return df_filt
 
-std_i_bar = [0.00349329,0.00465817,0.00543154]
+std_i_bar = [Decimal(0.00349329),Decimal(0.00465817),Decimal(0.00543154)]
 std_i_bar = np.array(std_i_bar)
 
 def equation_bai(X_i):
@@ -70,6 +70,8 @@ def calc_ai(df1):
         if(i-H>=0):
             for j in range(H,0,-1):
                 xyz_val.append([df1.loc[i-j,'x'],df1.loc[i-j,'y'],df1.loc[i-j,'z']])
+
+            # print('xyz val:', xyz_val)
             ai_val = float(equation_bai(xyz_val))
             ai1.append(ai_val)
         else:

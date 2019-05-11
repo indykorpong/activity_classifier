@@ -65,13 +65,29 @@ create table AuditLog(
 create table UserProfile(
 	Idx int not null auto_increment,
 	UserID int not null,
-    InitialUpdate datetime(3) not null,
-    LatestUpdate datetime(3) not null,
-    MinX decimal(10,8),
-    MinY decimal(10,8),
-    MinZ decimal(10,8),
-    MaxX decimal(10,8),
-    MaxY decimal(10,8),
-    MaxZ decimal(10,8),
+    IdxToLoad int not null default 0,
+    MinX decimal(10,8) default null,
+    MinY decimal(10,8) default null,
+    MinZ decimal(10,8) default null,
+    MaxX decimal(10,8) default null,
+    MaxY decimal(10,8) default null,
+    MaxZ decimal(10,8) default null,
     primary key(Idx, UserID)
 );
+
+-- InitialUpdate datetime(3) not null,
+-- LatestUpdate datetime(3) not null,
+
+create table ActivityLog2(
+	Idx int not null auto_increment,
+	UserID int not null, 
+	DateAndTime datetime(3) not null,
+	X decimal(20,8), 
+	Y decimal(20,8), 
+	Z decimal(20,8), 
+	HR decimal(11,8),
+    ActivityIndex decimal(11,8),
+    Label int,
+    SummarizedFlag bool,
+    primary key(Idx, UserID, DateAndTime)
+    );
