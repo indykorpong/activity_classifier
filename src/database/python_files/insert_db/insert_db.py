@@ -175,9 +175,9 @@ def insert_db_act_log(df_all_p, update=False):
     print(df_all_p['DateAndTime'].dtypes)
 
     if(not update):
-        # df_all_p.to_sql('ActivityLog2', con=cnx, schema='cu_amd', if_exists='append', index=False, index_label=None, chunksize=10000)
+        # df_all_p.to_sql('ActivityLog', con=cnx, schema='cu_amd', if_exists='append', index=False, index_label=None, chunksize=10000)
 
-        sql = "INSERT INTO ActivityLog2 (UserID, DateAndTime, X, Y, Z, HR) \
+        sql = "INSERT INTO ActivityLog (UserID, DateAndTime, X, Y, Z, HR) \
             VALUES (%s, %s, %s, %s, %s, %s)"
 
         values = zip(df_all_p['UserID'], df_all_p['DateAndTime'], \
@@ -196,13 +196,13 @@ def insert_db_act_log(df_all_p, update=False):
             u_id = val[0]; dt = val[1]; x_i = val[2]; y_i = val[3]; z_i = val[4]
             hr_i = val[5]; ai_i = val[6]; label_i = val[7]
             
-            ai_sql = "UPDATE ActivityLog2 SET ActivityIndex={} WHERE UserID={} and DateAndTime='{}';".format(ai_i, u_id, dt)
-            label_sql = "UPDATE ActivityLog2 SET Label={} WHERE UserID={} and DateAndTime='{}';".format(label_i, u_id, dt)
+            ai_sql = "UPDATE ActivityLog SET ActivityIndex={} WHERE UserID={} and DateAndTime='{}';".format(ai_i, u_id, dt)
+            label_sql = "UPDATE ActivityLog SET Label={} WHERE UserID={} and DateAndTime='{}';".format(label_i, u_id, dt)
 
             mycursor.execute(ai_sql)
             mycursor.execute(label_sql)
 
-        print('update activity log 2')
+        print('update activity log')
     
     mydb.commit()
 
@@ -226,11 +226,10 @@ def insert_db_hourly_summary(df_summary_all):
 
     time_format = '%H:%M:%S.%f'
 
-    # Convert all timestamp columns from datetime format to string format
     for c in time_cols:
         df_summary_all[c] = df_summary_all[c].apply(lambda x: x.strftime(time_format))
 
-    sql = "INSERT INTO HourlyActivitySummary (UserID, Date, TimeFrom, TimeUntil, \
+    insert_sql = "INSERT INTO HourlyActivitySummary (UserID, Date, TimeFrom, TimeUntil, \
         ActualFrom, ActualUntil, DurationSit, DurationSleep, DurationStand, DurationWalk, TotalDuration, \
         CountSit, CountSleep, CountStand, CountWalk, \
         CountInactive, CountActive, CountTotal, \
@@ -238,7 +237,7 @@ def insert_db_hourly_summary(df_summary_all):
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, \
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
 
-    sql2 = "SET @NewActualFrom := time(%s); \
+    update_sql = "SET @NewActualFrom := time(%s); \
             SET @OldActualFrom := (select ActualFrom from cu_amd.HourlyActivitySummary where TimeFrom=%s and UserID=%s and Date=%s); \
             \
             SET @NewActualUntil := time(%s); \
@@ -317,17 +316,21 @@ def insert_db_hourly_summary(df_summary_all):
 
     # Try executing the sql insert query. If the key already exists, execute the sql update query instead
     for z in values:
-        try:
+        u_id = z[0]; dat = z[1]; t_from = z[2]; t_until = z[3]; a_from = z[4]; a_until = z[5]; du_sit = z[6]; du_sleep = z[7];
+        du_stand = z[8]; du_walk = z[9]; du_total = z[10]; c_sit = z[11]; c_sleep = z[12]; c_stand = z[13]; c_walk = z[14]; 
+        c_inact = z[15]; c_act = z[16]; c_total = z[17]; c_acttoinact = z[18]; 
+        du_peract = z[19]
+
+        existed_sql = "SELECT @Existed := EXISTS(select * from cu_amd.HourlyActivitySummary where UserID={} and Date='{}' and TimeFrom='{}');".format(u_id, dat, t_from)
+        mycursor.execute(existed_sql)
+        result = mycursor.fetchone()
+        existed = result[0]
+
+        if(not existed):
             print('insert')
-            mycursor.execute(sql, z)
-        except IntegrityError:
+            mycursor.execute(insert_sql, z)
+        else:
             print('update hourly summary')
-
-            u_id = z[0]; dat = z[1]; t_from = z[2]; t_until = z[3]; a_from = z[4]; a_until = z[5]; du_sit = z[6]; du_sleep = z[7];
-            du_stand = z[8]; du_walk = z[9]; du_total = z[10]; c_sit = z[11]; c_sleep = z[12]; c_stand = z[13]; c_walk = z[14]; 
-            c_inact = z[15]; c_act = z[16]; c_total = z[17]; c_acttoinact = z[18]; 
-            du_peract = z[19]
-
             z_tuple = [a_from, t_from, u_id, dat, a_until, t_from, u_id, dat, du_sit, t_from, u_id, dat, 
             du_sleep, t_from, u_id, dat, du_stand, t_from, u_id, dat, du_walk, t_from, u_id, dat, 
             du_total, t_from, u_id, dat, c_sit, t_from, u_id, dat, c_sleep, t_from, u_id, dat, 
@@ -335,13 +338,13 @@ def insert_db_hourly_summary(df_summary_all):
             c_act, t_from, u_id, dat, c_total, t_from, u_id, dat, c_acttoinact, t_from, u_id, dat,
             du_peract, t_from, u_id, dat, u_id, dat, t_from, t_until]
 
-            print(z_tuple)
-            results = mycursor.execute(sql2, z_tuple, multi=True)
-            print(results)
+            # print(z_tuple)
+            results = mycursor.execute(update_sql, z_tuple, multi=True)
+            # print(results)
             for cur in results:
-                print('cursor:', cur)
+                # print('cursor:', cur)
                 if cur.with_rows:
-                    print(1)
+                    continue
                     # print('result:', cur.fetchall())
     
         mydb.commit()
@@ -440,20 +443,20 @@ def get_unpredicted_data(user_id, current_idx, batch_size=5000, time=300000):
     ]
 
     set_user_sql = "SELECT @UserID := {}".format(user_id)
-    first_res_sql = "SELECT @FirstResultIdx := Idx FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID ORDER BY Idx ASC LIMIT 1;"
-    last_res_sql = "SELECT @LastResultIdx := Idx FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID ORDER BY Idx DESC LIMIT 1;"
+    first_res_sql = "SELECT @FirstResultIdx := Idx FROM ActivityLog WHERE (LoadedFlag=False or LABEL IS NULL) and UserID=@UserID ORDER BY Idx ASC LIMIT 1;"
+    last_res_sql = "SELECT @LastResultIdx := Idx FROM ActivityLog WHERE LoadedFlag=False and UserID=@UserID ORDER BY Idx DESC LIMIT 1;"
     
-    init_idx_sql = "SELECT @IdxToLoad1 := Idx FROM (SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID ORDER BY Idx ASC) AS table0 limit 1;"
+    init_idx_sql = "SELECT @IdxToLoad1 := Idx FROM (SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE (LoadedFlag=False or LABEL IS NULL) and UserID=@UserID ORDER BY Idx ASC) AS table0 limit 1;"
     table_idx_sql = "SELECT @IdxToLoad2 := IdxToLoad from (SELECT IdxToLoad FROM UserProfile WHERE UserID=@UserID) AS table1 limit 1;"
     set_idx_sql = "SELECT @IdxToLoad_0 := IF(@IdxToLoad2 < @IdxToLoad1, @IdxToLoad2, @IdxToLoad1);"
     set_idx_sql_2 = "SELECT @IdxToLoad_0 := IF(@IdxToLoad_0 IS NULL, 0, @IdxToLoad_0);"
     
-    query_1_sql = "SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog2 WHERE LoadedFlag=False and UserID=@UserID and Idx<=@LastResultIdx and Idx>=@IdxToLoad_0 and Idx<@IdxToLoad_0+{} and Idx>={};".format(batch_size, current_idx)
+    query_1_sql = "SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE (LoadedFlag=False or LABEL IS NULL) and UserID=@UserID and Idx<=@LastResultIdx and Idx>=@IdxToLoad_0 and Idx<@IdxToLoad_0+{} and Idx>={};".format(batch_size, current_idx)
     
     set_load_idx_sql = "SELECT @IdxLoaded := IF(@IdxToLoad_0+{}>@LastResultIdx, @LastResultIdx, @IdxToLoad_0+{});".format(batch_size, batch_size)
     update_table_sql = "UPDATE cu_amd.UserProfile set IdxToLoad := @IdxLoaded where UserID=@UserID;"
 
-    update_loaded_flag_sql = "UPDATE cu_amd.ActivityLog2 SET LoadedFlag=TRUE WHERE LoadedFlag=False and UserID=@UserID and Idx<@IdxLoaded;"
+    update_loaded_flag_sql = "UPDATE cu_amd.ActivityLog SET LoadedFlag=TRUE WHERE LoadedFlag=False and UserID=@UserID and Idx<@IdxLoaded;"
 
     # try:
     for query in set_exec_time_sql:
@@ -566,7 +569,7 @@ def get_distinct_user_ids():
 def update_summarized_flag(user_id, current_idx):
     mydb, mycursor = connect_to_database()
     
-    sql = "UPDATE cu_amd.ActivityLog2 SET SummarizedFlag=TRUE WHERE SummarizedFlag=False and UserID={} and Idx<={};".format(user_id, current_idx)
+    sql = "UPDATE cu_amd.ActivityLog SET SummarizedFlag=TRUE WHERE SummarizedFlag=False and UserID={} and Idx<={};".format(user_id, current_idx)
 
     mycursor.execute(sql)
     mydb.commit()

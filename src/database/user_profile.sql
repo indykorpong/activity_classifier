@@ -4,7 +4,8 @@ delete from UserProfile where UserID=17;
 
 SELECT @UserID:=17;
 select @UserID;
-SELECT @LastResultIdx := Idx FROM ActivityLog WHERE Label IS NULL and UserID=@UserID ORDER BY Idx DESC LIMIT 1;
+SELECT @LastResultIdx := Idx FROM ActivityLog WHERE (LoadedFlag=False or Label IS NULL) and UserID=@UserID ORDER BY Idx DESC LIMIT 1;
+SELECT @LastResultIdx := Idx FROM ActivityLog WHERE UserID=@UserID ORDER BY Idx DESC LIMIT 1;
 
 SELECT @IdxToUpdate := Idx+1 FROM (SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE UserID=@UserID and Idx<=@LastResultIdx and Idx<@IdxToLoad_1+5000 and Label IS NOT NULL order by Idx ASC) as table2;
 UPDATE cu_amd.UserProfile set IdxToLoad = 25001 where UserID=17;

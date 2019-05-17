@@ -64,11 +64,12 @@ def concat_xyz(X):
 
 def prepare_impure_label(X, y, window_length=60):
     X_ol, y_ol = make_overlapping(X, y)
-    if(X.shape[0]<window_length):
-        X_ol = X
-        
-    X_concat_ol = concat_xyz(X_ol)
 
+    if(X.shape[0]<window_length):
+        X_ol = np.array([item for sublist in X for item in sublist])
+        return X_ol, y_ol
+
+    X_concat_ol = concat_xyz(X_ol)
     return X_concat_ol, y_ol
 
 

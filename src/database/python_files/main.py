@@ -53,11 +53,6 @@ status_error = -1
 def clean_table_data():
     mydb, mycursor = connect_to_database()
     sql_list = [
-        # 'update cu_amd.acc_log_2 set loaded_flag=NULL where event_timestamp>DATE_FORMAT("2019-04-29 12:00:00", "%Y-%m-%d %H-%i-%S") and event_timestamp<DATE_FORMAT("2019-05-01 21:30:00", "%Y-%m-%d %H-%i-%S");',
-        # 'update cu_amd.hr_log_2 set loaded_flag=NULL where event_timestamp>DATE_FORMAT("2019-04-29 12:00:00", "%Y-%m-%d %H-%i-%S") and event_timestamp<DATE_FORMAT("2019-05-01 21:30:00", "%Y-%m-%d %H-%i-%S");',
-        # 'delete from cu_amd.ActivityPeriod;',
-        # 'delete from cu_amd.ActivityLog;',
-        # 'update cu_amd.UserProfile set IdxToLoad = 0 where UserID=17;',
         "SET GLOBAL connect_timeout=28800", 
         "SET GLOBAL wait_timeout=28800", 
         "SET GLOBAL interactive_timeout=28800"
@@ -92,7 +87,7 @@ def get_all_day_result(all_patients, batch_size=10000):
         if(not df_all_p.empty):
             df_all_p['timestamp'] = df_all_p['timestamp'].apply(lambda x: np.datetime64(x))
             insert_db_act_log(df_all_p)
-            print('inserted to ActivityLog2')
+            print('inserted to ActivityLog')
 
         all_status[0] = status_stopped
         
@@ -117,7 +112,7 @@ def get_all_day_result(all_patients, batch_size=10000):
     
         # Get the unpredicted data from ActivityLog table in database
         mydb, mycursor = connect_to_database()
-        current_idx_sql = "SELECT Idx FROM ActivityLog2 WHERE UserID={} and LoadedFlag=False ORDER BY Idx ASC LIMIT 1;".format(user_id)
+        current_idx_sql = "SELECT Idx FROM ActivityLog WHERE UserID={} and (LoadedFlag=False or LABEL IS NULL) ORDER BY Idx ASC LIMIT 1;".format(user_id)
         
         # mycursor.execute(act_log_2_sql)
         mycursor.execute(current_idx_sql)
@@ -128,7 +123,7 @@ def get_all_day_result(all_patients, batch_size=10000):
         else:
             continue
 
-        last_res_sql = "SELECT @LastResultIdx := Idx FROM ActivityLog2 WHERE LoadedFlag=False and UserID={} ORDER BY Idx DESC LIMIT 1;".format(user_id)
+        last_res_sql = "SELECT @LastResultIdx := Idx FROM ActivityLog WHERE (LoadedFlag=False or LABEL IS NULL) and UserID={} ORDER BY Idx DESC LIMIT 1;".format(user_id)
         mycursor.execute(last_res_sql)
         result = mycursor.fetchone()
         if(mycursor.rowcount>0):
@@ -248,16 +243,16 @@ def main_function():
     get_all_day_result(all_patients)
 
 if(__name__=='__main__'):
-    # schedule_time = "00:00"
+    schedule_time = "00:00"
 
-    # # Schedule the program to run main function every XXXX
-    # schedule.every().minute.do(main_function)
-    # # schedule.every().day.at(schedule_time).do(main_function)
+    # Schedule the program to run main function every XXXX
+    # schedule.every().day.at(schedule_time).do(main_function)
+    schedule.every().minute.do(main_function)
 
-    # while 1:
-    #     schedule.run_pending()
-    #     time.sleep(1)
-    #     print('waiting')
+    while 1:
+        schedule.run_pending()
+        time.sleep(1)
+        print('.')
 
-    main_function()
+    # main_function()
         

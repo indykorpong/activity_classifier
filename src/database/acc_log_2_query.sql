@@ -1,8 +1,7 @@
-SELECT * FROM cu_amd.acc_log_2 WHERE user_id='17' and event_timestamp>DATE_FORMAT("2019-04-29", "%Y-%m-%d");
+SELECT * FROM cu_amd.accelerometer_log WHERE user_id='17' and event_timestamp>DATE_FORMAT("2019-05-11", "%Y-%m-%d");
+
 SELECT * FROM cu_amd.ActivityLog2 WHERE UserID='17' and DateAndTime>DATE_FORMAT("2019-05-01", "%Y-%m-%d");
-
 ALTER TABLE cu_amd.acc_log_2 MODIFY COLUMN loaded_flag bool NOT NULL DEFAULT 0;
-
 delete from cu_amd.ActivityPeriod;
 
 -- remove rows whose date > 30-04-2019
@@ -37,7 +36,7 @@ ALTER TABLE cu_amd.UserProfile ALTER IdxToLoad SET DEFAULT 0;
 -- load batch by batch
 Select @UserID := 17;
 SELECT @IdxToLoad1 := Idx from (
-	SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog2 WHERE Label IS NULL and UserID=@UserID
+	SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE Label IS NULL and UserID=@UserID
 ) AS table1 limit 1;
 
 SELECT @IdxToLoad2 := IdxToLoad from (
@@ -48,17 +47,17 @@ SELECT @IdxToLoad := IF(@IdxToLoad2 > @IdxToLoad1, @IdxToLoad2, @IdxToLoad1);
 SELECT @IdxToLoad_1 := IF(@IdxToLoad IS NULL, 0, @IdxToLoad);
 
 -- loop starts
-SELECT @LastResultIdx := Idx FROM ActivityLog2 WHERE Label IS NULL and UserID=@UserID ORDER BY Idx DESC LIMIT 1;
-SELECT @FirstResultIdx := Idx FROM ActivityLog2 WHERE Label IS NULL and UserID=@UserID ORDER BY Idx ASC LIMIT 1;
-SELECT count(*) FROM ActivityLog2 WHERE Label IS NULL and X IS NOT NULL and UserID=@UserID ORDER BY Idx DESC LIMIT 1;
+SELECT @LastResultIdx := Idx FROM ActivityLog WHERE Label IS NULL and UserID=@UserID ORDER BY Idx DESC LIMIT 1;
+SELECT @FirstResultIdx := Idx FROM ActivityLog WHERE Label IS NULL and UserID=@UserID ORDER BY Idx ASC LIMIT 1;
+SELECT count(*) FROM ActivityLog WHERE Label IS NULL and X IS NOT NULL and UserID=@UserID ORDER BY Idx DESC LIMIT 1;
 -- get data
 -- '636594'
 SELECT @LastResultIdx, @IdxToLoad_1, @IdxToLoad_1 + 5000, @UserID;
-SELECT * FROM ActivityLog2 WHERE UserID=17 and Idx<=@LastResultIdx and Idx>=@IdxToLoad_1 and Idx<@IdxToLoad_1+5000 and Label IS NULL;
+SELECT * FROM ActivityLog WHERE UserID=17 and Idx<=@LastResultIdx and Idx>=@IdxToLoad_1 and Idx<@IdxToLoad_1+5000 and Label IS NULL;
 
 SELECT @IdxLoaded := IF(@IdxToLoad_0+5000>@LastResultIdx, @LastResultIdx, @IdxToLoad_1+5000);
 
-SELECT @IdxToUpdate := Idx FROM (SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog2 WHERE UserID=@UserID and Idx<=@LastResultIdx and Label IS NULL order by Idx asc limit 1) as table2;
+SELECT @IdxToUpdate := Idx FROM (SELECT Idx, UserID, DateAndTime, X, Y, Z, HR, Label FROM ActivityLog WHERE UserID=@UserID and Idx<=@LastResultIdx and Label IS NULL order by Idx asc limit 1) as table2;
 select @IdxToUpdate;
 -- update idx to load and save it to user profile table
 update cu_amd.UserProfile set IdxToLoad = @IdxToLoad + 1000 where UserID=@UserID;
