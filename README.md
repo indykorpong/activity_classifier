@@ -10,7 +10,7 @@ Using smartwatch accelerometer data to detect dementia patient’s 4 basic activ
 
 ## Advisor:
 
-* Peerapon Vateekul, Ph.D.
+* Asst. Prof. Dr. Peerapon Vateekul
 
 ## Co-advisor:
 
