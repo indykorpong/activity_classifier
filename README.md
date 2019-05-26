@@ -8,6 +8,10 @@ Using smartwatch accelerometer data to detect dementia patient’s 4 basic activ
 
 * Puttiphat Sriratpinyo
 
-## Adviser:
+## Advisor:
 
 * Peerapon Vateekul, Ph.D.
+
+## Co-advisor:
+
+* Dr. Chavit Tunvirachaisakul, MD
