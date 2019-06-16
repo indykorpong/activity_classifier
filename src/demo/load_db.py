@@ -132,7 +132,7 @@ def plot_act_log(df_act_log, df_act_prd, date, min_time='09:30:00.000', max_time
         else:
             break
 
-    ax.legend()
+    ax.legend(loc='upper right')
 
     f = plt.gcf()
     f.autofmt_xdate()
@@ -146,11 +146,11 @@ def get_delta_minutes(n_minutes):
     return timedelta(seconds=60*n_minutes)
 
 if(__name__=='__main__'):
-    date = datetime.now().date()
+    date = '2019-05-15'
     
-    max_time = datetime.strptime('2019-05-12 15:04:00.123', '%Y-%m-%d %H:%M:%S.%f')
+    max_time = datetime.strptime('2019-05-15 13:46:00.123', '%Y-%m-%d %H:%M:%S.%f')
     # max_time = datetime.now() - get_delta_minutes(2)
-    min_time = max_time - get_delta_minutes(5)
+    min_time = max_time - get_delta_minutes(15)
 
     df_act_log = get_act_log(date)
     df_act_prd = get_activity_period(date)
